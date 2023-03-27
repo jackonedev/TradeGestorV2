@@ -269,7 +269,13 @@ Par: BTC-USDT
         Apalancamiento = {apal_x}
         Precio de liquidación = {round(precio_liq, price_precision)}
         Cantidad de entradas = {[round(qty_e, qty_precision) for qty_e in qty_entradas]}
+        Pérdidas peor escenario = {sum([precio*cantidad/apal_x for precio, cantidad in zip(entradas, qty_entradas)])}
         """)
+    
+
+    # SALIDA DEL PROGRAMA
+
+    ### OBTENEER LOS VALORES DEL RESULTADO INDIVIDUAL DE LAS ENTRADAS Y DEL TRADE EN GENERAL
 
     import sys
     sys.exit(0)
