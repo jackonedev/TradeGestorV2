@@ -69,7 +69,7 @@ def entero_o_porcentual(label):
         try:
             return float(ingreso), False
         except:
-            print(('Valor ingresado no valido'))
+            print(('Ingreso vacío'))#TODO BORRAR
             return None, None
 
 

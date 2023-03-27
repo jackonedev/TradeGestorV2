@@ -1,5 +1,7 @@
-# VERSION 4 PARTE 1: Empezamos a implementar la API
+#  VERSION 6
+
 import numpy as np
+import pandas as pd
 import os
 from dotenv import load_dotenv
 import requests
@@ -7,8 +9,15 @@ import time
 from http.client import HTTPException
 import hmac
 import hashlib
+from rich.console import Console
+from rich.table import Table
+from datetime import datetime
+import locale
+import codecs
 
 
+
+locale.setlocale(locale.LC_TIME, "es_ES.UTF-8")
 
 load_dotenv()
 
@@ -92,6 +101,8 @@ def price_BTC():
     return float(api_request('/openApi/swap/v2/quote/price', query_params='symbol=BTC-USDT')['data']['price'])
 def price_ETH():
     return float(api_request('/openApi/swap/v2/quote/price', query_params='symbol=ETH-USDT')['data']['price'])
+def price_XRP():
+    return float(api_request('/openApi/swap/v2/quote/price', query_params='symbol=XRP-USDT')['data']['price'])
 
 
 
@@ -101,7 +112,7 @@ def price_ETH():
 ## FUNCIONES DEL MAIN
 
 
-def apalancamiento(precio_entrada, worst_sl, direccion_trade, price_precision):
+def apalancamiento(precio_entrada, worst_sl, direccion_trade):
     """
     precio_entrada / apalancamiento = distancia entre el precio de entrada y el stop loss más alejado
     Para trabajar con margen de seguridad le quitamos una unidad al apalancamiento
@@ -114,35 +125,30 @@ def apalancamiento(precio_entrada, worst_sl, direccion_trade, price_precision):
         precio_liquidacion = precio_entrada *(1 + 1/apalancamiento)
     return apalancamiento, precio_liquidacion
 
+def obtener_contrato(par):
+    contracts = api_request(services['GET_1'])
+    contracts = pd.DataFrame(contracts['data'])
+    if par == 'XRP':
+        XRP_mask = contracts['symbol'].apply(lambda x: x.startswith('XRP')).values
+        XRP_contract = contracts.loc[XRP_mask]
+        return XRP_contract
+    elif par == 'BTC':
+        BTC_mask = contracts['symbol'].apply(lambda x: x.startswith('BTC')).values
+        BTC_contracts = contracts.loc[BTC_mask]
+        BTC_contract = BTC_contracts.iloc[0]
+        BTCD_contract = BTC_contracts.iloc[1]
+        return BTC_contract
+    return
 
 
 
 
 
 
-
-
-
-# VERSION 4 PARTE 2.2
+# VERSION 5 MAIN
 if __name__ == '__main__':
     from tools.ingresar_datos import ingreso_bool, ingreso_bool_personalizado, entero_o_porcentual
     from itertools import count
-
-    contract = {'contractId': '100',
-        'symbol': 'BTC-USDT',
-        'size': '0.0001',
-        'quantityPrecision': 4,
-        'pricePrecision': 1,
-        'feeRate': 0.0005,
-        'tradeMinLimit': 1,
-        'maxLongLeverage': 150,
-        'maxShortLeverage': 150,
-        'currency': 'USDT',
-        'asset': 'BTC',
-        'status': 1
-    }
-    qty_precision = contract['quantityPrecision']
-    price_precision = contract['pricePrecision']
 
     print ('''
     ============================================================
@@ -151,18 +157,22 @@ if __name__ == '__main__':
 TradeGestorDEMO v2
 Exchange: BingX
 Cuenta: Future Perpetual
-Par: BTC-USDT
+Pares: BTC-USDT  |  XRP-USDT
 
     ''')
 
-
-
+    par = ingreso_bool_personalizado('BTC', 'XRP')
+    if not par:
+        exit()
+    contract = obtener_contrato(par)
+    qty_precision = contract['quantityPrecision']
+    price_precision = contract['pricePrecision']
 
     vol_cta = get_account_balance()
     riesgo_posicion = 5#%
     print ('Direccion del trade:')
     direccion_trade = ingreso_bool_personalizado('LONG', 'SHORT')
-    n_entradas = 1
+    n_entradas = 2
     if n_entradas <= 0 or n_entradas > 5:
         raise ValueError('La posición solo admite hasta 5 entradas')
 
@@ -171,19 +181,20 @@ Par: BTC-USDT
     vol_operacion = vol_cta * riesgo_posicion /100
     vol_entrada = vol_operacion / n_entradas
 
-    print ("""
+    display_data_inicial = """
 >>    DATOS DE LA CUENTA
         - volumen cuenta  = {}
 
 >>    DATOS DE LA POSICION
+        - par = {}
         - riesgo posicion = {}%
         - direccion trade = {}
         - nº entradas = {}
         - volumen operacion = {}
         - volumen por entrada = {}
 
-        """.format(vol_cta, riesgo_posicion, direccion_trade, n_entradas, vol_operacion, vol_entrada))
-
+        """.format(vol_cta, par, riesgo_posicion, direccion_trade, n_entradas, vol_operacion, round(vol_entrada,2))
+    print (display_data_inicial)
 
     print ('''
     ============================================================
@@ -199,43 +210,49 @@ Par: BTC-USDT
 
     target_entradas = []
     print ('\nCargando precio...')
-    benchmark = price_BTC()
+    if par == 'BTC':
+        benchmark = price_BTC()
+    elif par == 'XRP':
+        benchmark = price_XRP()
     print ('continuando\n')
     display_estado = """
 
     ============================================================
                             ENTRADA Nº {}
     ============================================================
-    precio BTC de referencia = {}
+    Precio de referencia {} = {}
     """
     entrada_count = count(1)
     for estado in estado_entradas:
         if estado:
-            print (display_estado.format(next(entrada_count), benchmark))
+            print (display_estado.format(next(entrada_count), par, benchmark))
+            # DETERMINACION DE LA ENTRADA
             entrada = ingreso_bool_personalizado('MARKET', 'LIMIT', default='MARKET')
             if entrada == 'LIMIT':
-                entrada, pct = entero_o_porcentual('>>  Ingrese PRECIO DE ENTRADA: ')
+                entrada, pct = entero_o_porcentual('>>  PRECIO DE ENTRADA (Vacío significa precio MARKET) ')
                 if pct and direccion_trade=='LONG':
                     entrada = benchmark *(1-entrada)
                 elif pct and direccion_trade=='SHORT':
                     entrada = benchmark *(1+entrada)
                 elif not entrada:
-                    raise ValueError('No se puede ingresar un orden LIMIT sin precio entrada')
+                    print ('Ingresando orden LIMIT a precio MARKET')
+                    entrada = benchmark
+                    # raise ValueError('No se puede ingresar un orden LIMIT sin precio entrada')
             elif entrada == 'MARKET':
                 entrada = benchmark
             else:
                 raise ValueError('No se puede colocar una entrada vacia')
-
-            sl, pct = entero_o_porcentual('>>  Ingrese target STOPLOSS: ')
+            # DETERMINACION DEL STOPLOSS
+            sl, pct = entero_o_porcentual('>>  STOPLOSS ')
             if pct and direccion_trade=='LONG':
                 sl = benchmark * (1 - sl)
             elif pct and direccion_trade=='SHORT':
                 sl = benchmark * (1 + sl)
-            elif not sl:
+            elif not sl:#TODO meter la SL dentro de un bucle while o agregar la función de chance
                 raise ValueError('No se puede puede ingresar una orden LIMIT sin target StopLoss')
 
             target_entradas.append((entrada, sl))
-
+            # VERIFICACION
             for entrada, sl in target_entradas:
                 if direccion_trade == 'LONG':
                     if entrada <= sl:
@@ -246,6 +263,7 @@ Par: BTC-USDT
 
 
     # DIMENSIONAMIENTO DEL TRADE
+    print ('\nCalculando posición...')
     #1. promediar entradas
     entradas = [entrada for entrada, _ in target_entradas]
     entrada_promedio = np.mean(entradas)
@@ -256,24 +274,100 @@ Par: BTC-USDT
     elif direccion_trade == 'SHORT':
         worst_sl = np.max(sls)
     #3. medir el apalancamiento para estar lo más cerca posible del stop loss más alejado, con un margen hardcoded de 2
-    apal_x, precio_liq = apalancamiento(entrada_promedio, worst_sl, direccion_trade, price_precision)
+    apal_x, precio_liq = apalancamiento(entrada_promedio, worst_sl, direccion_trade)
 
-    qty_entradas = [vol_entrada / entrada_i * apal_x for entrada_i in entradas]
+    qty_entradas = [round(vol_entrada/abs(x[0] - x[1]),qty_precision) for x in target_entradas]
+
+
+
+
+    display_resultado = """
+    
+    ============================================================
+                            RESULTADOS
+    ============================================================
+    
+    """
+
 
     # IMPRESION DE RESULTADOS
-    print (f"""
-    RESULTADOS TRADE {direccion_trade}
-        Benchmark = {benchmark}
-        Entrada promedio = {round(entrada_promedio, price_precision)}
-        StopLoss más alejado = {round(worst_sl, price_precision)}
-        Apalancamiento = {apal_x}
-        Precio de liquidación = {round(precio_liq, price_precision)}
-        Cantidad de entradas = {[round(qty_e, qty_precision) for qty_e in qty_entradas]}
-        Pérdidas peor escenario = {sum([precio*cantidad/apal_x for precio, cantidad in zip(entradas, qty_entradas)])}
-        """)
+    display_resultados =f"""
+>>  DESCRIPCION TRADE {direccion_trade}
+        - Precio de referencia = {benchmark}
+        - Entrada promedio = {round(entrada_promedio, price_precision)}
+        - StopLoss más alejado = {round(worst_sl, price_precision)}
+        - Apalancamiento = {apal_x}
+        - Precio de liquidación = {round(precio_liq, price_precision)}
+        - Cantidad por entrada = {[round(qty_e, qty_precision) for qty_e in qty_entradas]}
+        - Pérdidas peor escenario = {round(sum([precio*cantidad/apal_x for precio, cantidad in zip(entradas, qty_entradas)]), 2)}
+        """
+    print (display_resultados)
+
+    # RESUMEN ENTRADAS
+    console = Console(record=True)
+    table = Table(title="RESUMEN ENTRADAS: {} | PAR: {}".format(direccion_trade, par))
+
+    table.add_column("Nº", justify="right", style="cyan", no_wrap=True)
+    table.add_column("CONDICION", style="cyan")
+    table.add_column("ENTRADA", justify="right", style="cyan")
+    table.add_column("STOPLOSS", justify="right", style="cyan")
+    table.add_column("CANTIDAD", justify="right", style="cyan")
+    table.add_column("RIESGO", justify="right", style="cyan")
+
+    def generar_rows(n_entradas, estado_entradas, entradas, sls, qty_entradas):
+        id = [str(i) for i in range(1, n_entradas+1)]
+        estado_entradas = ['Calculada' if e else 'Omitida' for e in estado_entradas]
+        entradas = [entradas[i] if i < len(entradas) else 0.0 for i in range(n_entradas)]
+        sls = [sls[i] if i < len(sls) else 0.0 for i in range(n_entradas)]
+        qty_entradas = [qty_entradas[i] if i < len(qty_entradas) else 0.0 for i in range(n_entradas)]
+        riesgo = [(entradas[i] - sls[i])*qty_entradas[i] for i in range(n_entradas)]
+
+        entradas = [str(round(elemento, price_precision))for elemento in entradas]
+        sls = [str(round(elemento, price_precision))for elemento in sls]
+        qty_entradas = [str(round(elemento, qty_precision))for elemento in qty_entradas]
+        riesgo = [str(round(elemento, 1))for elemento in riesgo]
+        return id, estado_entradas, entradas, sls, qty_entradas, riesgo
+
+    row_1, row_2, row_3, row_4, row_5, row_6 = generar_rows(n_entradas, estado_entradas, entradas, sls, qty_entradas)
+
+    for i in range(n_entradas):
+        table.add_row(row_1[i], row_2[i], row_3[i], row_4[i], row_5[i], row_6[i])
+    console.print(table)
     
 
-    # SALIDA DEL PROGRAMA
+
+    ######      ######      ######
+    ##  GUARDAR POSICION EN TXT
+    ######      ######      ######
+    path = os.getcwd()
+    file_location = 'registro'
+    path = os.path.join(path, file_location)
+    os.makedirs(path, exist_ok=True)
+    # contador = count(1)#TODO
+    fecha_actual = datetime.now()
+    nombre_mes = fecha_actual.strftime("%B").title()
+    hora = '\n\n\nTrade calculado el día {} a las {}'.format(fecha_actual.strftime("%d de {mes} de %Y").format(mes=nombre_mes), fecha_actual.strftime("%H:%M:%S"))
+    file_name = f'{direccion_trade}_{par}_{fecha_actual.strftime("%d_{}").format(nombre_mes)}.txt'#next(contador)
+
+    file = os.path.join(path, file_name)
+    # TODO: 
+    # file_names = os.listdir(path=os.getcwd() + "\data\\")
+    # frame = pd.DataFrame()
+    # for file in file_names:
+    #     if file.endswith(".csv"):
+    #         frame = pd.concat([frame, pd.read_csv(os.getcwd() + "\data\\" + file)])
+
+
+    
+    with codecs.open(file, 'w', encoding='utf-8') as f:
+        f.write('TradeGestorDEMO v2 \tCalculadora de riesgo y gestor de posiciones\n')
+        f.write(display_data_inicial)
+        f.write(display_resultados)
+        f.write('\n\n\n')
+        f.write(console.export_text())
+        f.write(hora)
+        f.write('\nTradeGestorDEMO v2   -- Hecho por Jackone Action Software Company')
+
 
     ### OBTENEER LOS VALORES DEL RESULTADO INDIVIDUAL DE LAS ENTRADAS Y DEL TRADE EN GENERAL
 
