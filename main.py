@@ -131,7 +131,7 @@ def obtener_contrato(par):
     if par == 'XRP':
         XRP_mask = contracts['symbol'].apply(lambda x: x.startswith('XRP')).values
         XRP_contract = contracts.loc[XRP_mask]
-        return XRP_contract
+        return XRP_contract.iloc[0]
     elif par == 'BTC':
         BTC_mask = contracts['symbol'].apply(lambda x: x.startswith('BTC')).values
         BTC_contracts = contracts.loc[BTC_mask]
@@ -141,11 +141,15 @@ def obtener_contrato(par):
     return
 
 
+################################################################################################
+################################################################################################
+################################################################################################
+#########################              PROGRAMA PRINCIPAL              #########################
+################################################################################################
+################################################################################################
+################################################################################################
 
 
-
-
-# VERSION 5 MAIN
 if __name__ == '__main__':
     from tools.ingresar_datos import ingreso_bool, ingreso_bool_personalizado, entero_o_porcentual
     from itertools import count
@@ -160,19 +164,29 @@ Cuenta: Future Perpetual
 Pares: BTC-USDT  |  XRP-USDT
 
     ''')
-
+    print ('Seleccione par a operar:')
     par = ingreso_bool_personalizado('BTC', 'XRP')
+    print ('Obteniendo datos del contrato...')
     if not par:
         exit()
     contract = obtener_contrato(par)
     qty_precision = contract['quantityPrecision']
     price_precision = contract['pricePrecision']
 
-    vol_cta = get_account_balance()
-    riesgo_posicion = 5#%
+    ## ESTABLECER EL APALANCAMIENTO MAXIMO DEL PAR (OBTENIDO MANUALMENTE INGRESANDO A LA PLATFORMA)#TODO: exportar esta data a un archivo externo
+    if par == 'BTC':
+        apalancamiento_maximo = 150
+    elif par == 'XRP':
+        apalancamiento_maximo = 125
+
+
+    print ('Obteniendo datos de la cuenta...\n')
+    # vol_cta = get_account_balance()#TODO: salir de la DEMO
+    vol_cta = 50
+    riesgo_posicion = 40#%
     print ('Direccion del trade:')
     direccion_trade = ingreso_bool_personalizado('LONG', 'SHORT')
-    n_entradas = 2
+    n_entradas = 3
     if n_entradas <= 0 or n_entradas > 5:
         raise ValueError('La posición solo admite hasta 5 entradas')
 
@@ -276,6 +290,9 @@ Pares: BTC-USDT  |  XRP-USDT
     #3. medir el apalancamiento para estar lo más cerca posible del stop loss más alejado, con un margen hardcoded de 2
     apal_x, precio_liq = apalancamiento(entrada_promedio, worst_sl, direccion_trade)
 
+    if apal_x > apalancamiento_maximo:
+        raise ValueError(f'El apalancamiento máximo para este par es de {apalancamiento_maximo}x\nEl apalancamiento calculado es de {apal_x}x')
+
     qty_entradas = [round(vol_entrada/abs(x[0] - x[1]),qty_precision) for x in target_entradas]
 
 
@@ -290,7 +307,7 @@ Pares: BTC-USDT  |  XRP-USDT
     """
 
 
-    # IMPRESION DE RESULTADOS
+    # IMPRESION DE DESCRIPCION DE TRADE
     display_resultados =f"""
 >>  DESCRIPCION TRADE {direccion_trade}
         - Precio de referencia = {benchmark}
@@ -298,12 +315,12 @@ Pares: BTC-USDT  |  XRP-USDT
         - StopLoss más alejado = {round(worst_sl, price_precision)}
         - Apalancamiento = {apal_x}
         - Precio de liquidación = {round(precio_liq, price_precision)}
-        - Cantidad por entrada = {[round(qty_e, qty_precision) for qty_e in qty_entradas]}
-        - Pérdidas peor escenario = {round(sum([precio*cantidad/apal_x for precio, cantidad in zip(entradas, qty_entradas)]), 2)}
+        - Total comerciado = {sum([round(qty_e, qty_precision) for qty_e in qty_entradas])}
+        - Pérdidas peor escenario = {round(sum([abs(entradas[i] - sls[i])*qty_entradas[i] for i in range(sum(estado_entradas))]), 2)}
         """
     print (display_resultados)
 
-    # RESUMEN ENTRADAS
+    # GENERACION DE TABLA DE RESUMEN DE ENTRADAS
     console = Console(record=True)
     table = Table(title="RESUMEN ENTRADAS: {} | PAR: {}".format(direccion_trade, par))
 
@@ -320,7 +337,7 @@ Pares: BTC-USDT  |  XRP-USDT
         entradas = [entradas[i] if i < len(entradas) else 0.0 for i in range(n_entradas)]
         sls = [sls[i] if i < len(sls) else 0.0 for i in range(n_entradas)]
         qty_entradas = [qty_entradas[i] if i < len(qty_entradas) else 0.0 for i in range(n_entradas)]
-        riesgo = [(entradas[i] - sls[i])*qty_entradas[i] for i in range(n_entradas)]
+        riesgo = [abs(entradas[i] - sls[i])*qty_entradas[i] for i in range(n_entradas)]
 
         entradas = [str(round(elemento, price_precision))for elemento in entradas]
         sls = [str(round(elemento, price_precision))for elemento in sls]
@@ -339,26 +356,35 @@ Pares: BTC-USDT  |  XRP-USDT
     ######      ######      ######
     ##  GUARDAR POSICION EN TXT
     ######      ######      ######
+
+    # CREAR CARPETA
     path = os.getcwd()
     file_location = 'registro'
     path = os.path.join(path, file_location)
     os.makedirs(path, exist_ok=True)
-    # contador = count(1)#TODO
+
+    # OBTENER DATA DE HOY
     fecha_actual = datetime.now()
     nombre_mes = fecha_actual.strftime("%B").title()
     hora = '\n\n\nTrade calculado el día {} a las {}'.format(fecha_actual.strftime("%d de {mes} de %Y").format(mes=nombre_mes), fecha_actual.strftime("%H:%M:%S"))
-    file_name = f'{direccion_trade}_{par}_{fecha_actual.strftime("%d_{}").format(nombre_mes)}.txt'#next(contador)
+    
+    # LEEMOS EL NOMBRE DE LOS FICHEROS DEL DIRECTORIO CREADO
+    file_names = os.listdir(path=path)
+
+    # SI LA LISTA ESTA VACIA CREAR EL PRIMER ARCHIVO
+    if len(file_names) == 0:
+        file_name = f'01_{direccion_trade}_{par}_{fecha_actual.strftime("%d_{}").format(nombre_mes)}.txt'
+
+    # SI LA LISTA NO ESTA VACIA OBTENER EL ULTIMO ARCHIVO Y LEER EL CONTADOR
+    else:
+        last_file = file_names[-1]
+        i = int(last_file.split('_')[0])
+        file_name = f'{i+1:02d}_{direccion_trade}_{par}_{fecha_actual.strftime("%d_{}").format(nombre_mes)}.txt'
+
 
     file = os.path.join(path, file_name)
-    # TODO: 
-    # file_names = os.listdir(path=os.getcwd() + "\data\\")
-    # frame = pd.DataFrame()
-    # for file in file_names:
-    #     if file.endswith(".csv"):
-    #         frame = pd.concat([frame, pd.read_csv(os.getcwd() + "\data\\" + file)])
 
 
-    
     with codecs.open(file, 'w', encoding='utf-8') as f:
         f.write('TradeGestorDEMO v2 \tCalculadora de riesgo y gestor de posiciones\n')
         f.write(display_data_inicial)
@@ -366,7 +392,7 @@ Pares: BTC-USDT  |  XRP-USDT
         f.write('\n\n\n')
         f.write(console.export_text())
         f.write(hora)
-        f.write('\nTradeGestorDEMO v2   -- Hecho por Jackone Action Software Company')
+        f.write('\n   -- Desarrollado por Jackone Action Software Company\n   -- jackone.action.software@gmail.com')
 
 
     ### OBTENEER LOS VALORES DEL RESULTADO INDIVIDUAL DE LAS ENTRADAS Y DEL TRADE EN GENERAL
