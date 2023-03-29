@@ -55,7 +55,7 @@ def api_request(service, method='GET', query_params=None, sign=False):
     """docstring"""
     ROOT_URL = URL
     url = f'{ROOT_URL}{service}'
-    header = {
+    header = {#TODO: header only if user set his API key
         'Content-Type': 'application/json',
         'X-BX-APIKEY': API_KEY,
     }
@@ -105,6 +105,20 @@ def price_XRP():
     return float(api_request('/openApi/swap/v2/quote/price', query_params='symbol=XRP-USDT')['data']['price'])
 
 
+def obtener_contrato(par):
+    contracts = api_request(services['GET_1'])
+    contracts = pd.DataFrame(contracts['data'])
+    if par == 'XRP':
+        XRP_mask = contracts['symbol'].apply(lambda x: x.startswith('XRP')).values
+        XRP_contract = contracts.loc[XRP_mask]
+        return XRP_contract.iloc[0]
+    elif par == 'BTC':
+        BTC_mask = contracts['symbol'].apply(lambda x: x.startswith('BTC')).values
+        BTC_contracts = contracts.loc[BTC_mask]
+        BTC_contract = BTC_contracts.iloc[0]
+        BTCD_contract = BTC_contracts.iloc[1]
+        return BTC_contract
+    return
 
 
 
@@ -125,20 +139,20 @@ def apalancamiento(precio_entrada, worst_sl, direccion_trade):
         precio_liquidacion = precio_entrada *(1 + 1/apalancamiento)
     return apalancamiento, precio_liquidacion
 
-def obtener_contrato(par):
-    contracts = api_request(services['GET_1'])
-    contracts = pd.DataFrame(contracts['data'])
-    if par == 'XRP':
-        XRP_mask = contracts['symbol'].apply(lambda x: x.startswith('XRP')).values
-        XRP_contract = contracts.loc[XRP_mask]
-        return XRP_contract.iloc[0]
-    elif par == 'BTC':
-        BTC_mask = contracts['symbol'].apply(lambda x: x.startswith('BTC')).values
-        BTC_contracts = contracts.loc[BTC_mask]
-        BTC_contract = BTC_contracts.iloc[0]
-        BTCD_contract = BTC_contracts.iloc[1]
-        return BTC_contract
-    return
+def generar_rows(n_entradas, estado_entradas, entradas, sls, qty_entradas):
+    id = [str(i) for i in range(1, n_entradas+1)]
+    estado_entradas = ['Calculada' if e else 'Omitida' for e in estado_entradas]
+    entradas = [entradas[i] if i < len(entradas) else 0.0 for i in range(n_entradas)]
+    sls = [sls[i] if i < len(sls) else 0.0 for i in range(n_entradas)]
+    qty_entradas = [qty_entradas[i] if i < len(qty_entradas) else 0.0 for i in range(n_entradas)]
+    riesgo = [abs(entradas[i] - sls[i])*qty_entradas[i] for i in range(n_entradas)]
+
+    entradas = [str(round(elemento, price_precision))for elemento in entradas]
+    sls = [str(round(elemento, price_precision))for elemento in sls]
+    qty_entradas = [str(round(elemento, qty_precision))for elemento in qty_entradas]
+    riesgo = [str(round(elemento, 1))for elemento in riesgo]
+    return id, estado_entradas, entradas, sls, qty_entradas, riesgo
+
 
 
 ################################################################################################
@@ -164,6 +178,9 @@ Cuenta: Future Perpetual
 Pares: BTC-USDT  |  XRP-USDT
 
     ''')
+
+
+    # SETEO DE LAS VARIABLES INICIALES
     print ('Seleccione par a operar:')
     par = ingreso_bool_personalizado('BTC', 'XRP')
     print ('Obteniendo datos del contrato...')
@@ -181,8 +198,7 @@ Pares: BTC-USDT  |  XRP-USDT
 
 
     print ('Obteniendo datos de la cuenta...\n')
-    # vol_cta = get_account_balance()#TODO: salir de la DEMO
-    vol_cta = 50
+    vol_cta = get_account_balance()#TODO: VERSION USERLESS
     riesgo_posicion = 40#%
     print ('Direccion del trade:')
     direccion_trade = ingreso_bool_personalizado('LONG', 'SHORT')
@@ -191,7 +207,6 @@ Pares: BTC-USDT  |  XRP-USDT
         raise ValueError('La posición solo admite hasta 5 entradas')
 
     # CALCULO DE LA POSICION
-    # vol_cta *= 10 #  <-- preapalancamiento
     vol_operacion = vol_cta * riesgo_posicion /100
     vol_entrada = vol_operacion / n_entradas
 
@@ -331,19 +346,7 @@ Pares: BTC-USDT  |  XRP-USDT
     table.add_column("CANTIDAD", justify="right", style="cyan")
     table.add_column("RIESGO", justify="right", style="cyan")
 
-    def generar_rows(n_entradas, estado_entradas, entradas, sls, qty_entradas):
-        id = [str(i) for i in range(1, n_entradas+1)]
-        estado_entradas = ['Calculada' if e else 'Omitida' for e in estado_entradas]
-        entradas = [entradas[i] if i < len(entradas) else 0.0 for i in range(n_entradas)]
-        sls = [sls[i] if i < len(sls) else 0.0 for i in range(n_entradas)]
-        qty_entradas = [qty_entradas[i] if i < len(qty_entradas) else 0.0 for i in range(n_entradas)]
-        riesgo = [abs(entradas[i] - sls[i])*qty_entradas[i] for i in range(n_entradas)]
 
-        entradas = [str(round(elemento, price_precision))for elemento in entradas]
-        sls = [str(round(elemento, price_precision))for elemento in sls]
-        qty_entradas = [str(round(elemento, qty_precision))for elemento in qty_entradas]
-        riesgo = [str(round(elemento, 1))for elemento in riesgo]
-        return id, estado_entradas, entradas, sls, qty_entradas, riesgo
 
     row_1, row_2, row_3, row_4, row_5, row_6 = generar_rows(n_entradas, estado_entradas, entradas, sls, qty_entradas)
 
@@ -386,7 +389,7 @@ Pares: BTC-USDT  |  XRP-USDT
 
 
     with codecs.open(file, 'w', encoding='utf-8') as f:
-        f.write('TradeGestorDEMO v2 \tCalculadora de riesgo y gestor de posiciones\n')
+        f.write('TradeGestorDEMO: v2 \nCalculadora de riesgo y gestor de posiciones\nExchange: BingX\n')
         f.write(display_data_inicial)
         f.write(display_resultados)
         f.write('\n\n\n')
