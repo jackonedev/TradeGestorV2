@@ -198,11 +198,12 @@ Pares: BTC-USDT  |  XRP-USDT
 
 
     print ('Obteniendo datos de la cuenta...\n')
-    vol_cta = get_account_balance()#TODO: VERSION USERLESS
-    riesgo_posicion = 40#%
+    # vol_cta = get_account_balance()#TODO: VERSION USERLESS
+    vol_cta = 1000#TODO: VERSION USERLESS
+    riesgo_posicion = 5#%
     print ('Direccion del trade:')
     direccion_trade = ingreso_bool_personalizado('LONG', 'SHORT')
-    n_entradas = 3
+    n_entradas = 5
     if n_entradas <= 0 or n_entradas > 5:
         raise ValueError('La posición solo admite hasta 5 entradas')
 
