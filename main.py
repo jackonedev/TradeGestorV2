@@ -197,6 +197,9 @@ Pares: BTC-USDT  |  XRP-USDT
         apalancamiento_maximo = 125
 
 
+
+
+
     print ('Obteniendo datos de la cuenta...\n')
     # vol_cta = get_account_balance()#TODO: VERSION USERLESS
     vol_cta = 1000#TODO: VERSION USERLESS
