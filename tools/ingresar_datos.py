@@ -20,25 +20,9 @@ def ingreso_bool(label):
 
 
 def ingreso_bool_personalizado(op1, op2, default=None):
-    """Funcion que recibe 2 valores que son las opciones que posee el usuario de forma predefinada
-
-        op1, op2 son obligatorias
-
-    También posee la posibilidad de fijar dos clases de default values:
-        1- default == op_i: o sea, que dejando en blanco se selecciona dicha opción
-        2- default == 'user-input': esta función permite tener una instancia previa definida arbitrariamente por el usuario
-
-        en caso de que default=='user-input' y el usuario dejé el input en blanco, entonces continua con las opciones
-    """
     x_bool = count(1)
     x_bool_limit = 3  
     chance = 1
-    if default=='user-input':
-        print ('Dejar vacío para continuar con las opciones')
-        ingreso = input('>> ')
-        if ingreso:
-            return ingreso
-    
     print(('< 1: {} >    < 0: {} >'.format(op1, op2)))
     ingreso = input('>> ')
     if default and ingreso=='':
@@ -47,6 +31,7 @@ def ingreso_bool_personalizado(op1, op2, default=None):
         chance = next(x_bool) + 1
         print(( 'Intento {} de {}'.format(chance, x_bool_limit)))
         ingreso = input('>> ')
+
     if chance == x_bool_limit:
         print(( 'Intento agotados\n'))
         return
