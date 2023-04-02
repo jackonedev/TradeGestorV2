@@ -52,11 +52,9 @@ while True:
 
 
     if opcion == "1":
-        # MAIN APP
+        ## MAIN APP
 
-
-
-        ##TODO: (2) Comprobacion del archivo active.tkl, debe cumplir determinado formato y devolver el nombre de la cuenta
+        ## LECTURA DE LA CUENTA
         path = os.path.join(os.getcwd(), 'cuentas', 'active.pkl')
         with open(path, 'rb') as f:
             cuenta = pickle.load(f)
@@ -64,41 +62,33 @@ while True:
                 print('La cuenta activa no tiene el formato correcto')
                 continue
 
-
-        ##  ## cuenta y operativa
+        ##  DESEMPAQUE Y CREACION DE VARIABLES LOCALES
         nombre, dict_cta = tuple(cuenta)
         for key in dict_cta.keys():
                 locals()[key] = dict_cta[key]
         
-
+        ## CONFIRMACION DE CUENTA
         imprimir_cuenta(nombre, dict_cta)
         continuar = ingreso_bool('Continuar?')
         if not continuar:
             continue
 
-        
         display_app_1 = """
         
         ============================================================
                     GENERADOR DE POSICIONES DE RIESGO
         ============================================================
 """
-                        
         print (display_app_1)
-        
 
-
-        if os.path.isfile('cuentas/active.pkl'):
-            with open('cuentas/active.pkl', 'rb') as f:
-                    cuenta = pickle.load(f)
-        
-        if cuenta == '--.. .- .-. - . -..- .--. .-. ---':
-            print('''Por favor, ingrese a la configuración de la app y seleccione una cuenta.''')
+        ## SELECCION DEL PAR
+        print ('Seleccione par a operar:')
+        par = ingreso_bool_personalizado('BTC', 'XRP')
+        print ('Obteniendo datos del contrato...')
+        if not par:
+            print ('Fallo la operativa')
             continue
-        
-        
-        
-        par = seleccionar_par()
+
         ##  1.2 Búsqueda de contrato
         # Actualizar a leer desde el archivo local
         from tools.api_bingx import cargar_contrato

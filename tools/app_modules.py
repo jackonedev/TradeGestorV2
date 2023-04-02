@@ -2,6 +2,8 @@ from functools import reduce
 import os
 from dotenv import load_dotenv
 
+
+
 load_dotenv()
 
 
@@ -37,3 +39,5 @@ def imprimir_cuenta(nombre, cuenta):
             print ('{}: {:.2f}'.format(key, value))
         else:
             print ('{}: {}'.format(key, value))
+
+
