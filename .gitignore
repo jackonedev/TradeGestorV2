@@ -5,6 +5,7 @@ registro/
 *obsoleto*
 contratos/*
 cuentas/
+*posicion.txt
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

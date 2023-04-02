@@ -46,8 +46,8 @@ def ingreso_bool_personalizado(op1, op2, default=None):
 def ingreso_entero(label):#TODO: Decorators
     chance = count(1)
     limit = 3
-
-    ingreso = input(label)
+    print (label)
+    ingreso = input('>>  ')
     while not ingreso.isdigit():
         chance = next(chance) + 1
         print(( 'Intento {} de {}'.format(chance, limit)))
@@ -61,7 +61,7 @@ def ingreso_entero(label):#TODO: Decorators
 
 def entero_o_porcentual(label):#TODO: si el input termina en . es porcentual -> ejemplo 3. == 3% ; 3.4. = 3.4%
     print (label)
-    ingreso = input("Ingrese un numero entero o porcentual: ")
+    ingreso = input(">>  ")
     if ingreso.count('%')==1 and ingreso.endswith('%'):
         return float(ingreso.replace('%',''))/100, True
     elif ingreso.isdigit():
@@ -70,7 +70,7 @@ def entero_o_porcentual(label):#TODO: si el input termina en . es porcentual -> 
         try:
             return float(ingreso), False
         except:
-            print(('Ingreso vacío'))#TODO BORRAR
+            print(('Ingreso vacio'))#TODO BORRAR
             return None, None
 
 
@@ -109,3 +109,67 @@ def activate_options(opciones: list) -> str:
                         return opciones_dict[opcion]
                 else:
                         print('Opción no válida')
+
+
+
+
+
+
+
+
+
+def ingresar_tasa():
+    """Siempre devuelve un float entre 1 y 100. Si el input termina en %, se asume que es porcentual."""
+    ingreso = input('>>  ')
+    if not ingreso:
+        print( 'return')
+        return
+    if ingreso.count('%') == 1 and ingreso.endswith('%'):
+        print('%')
+        ingreso = ingreso.replace('%','')
+        if ingreso.isdigit():
+            ingreso = float(ingreso)
+            if 1 <= ingreso <= 100:
+                return ingreso
+            else:
+                print( 'El número es demasiado grande, pruebe entre 1 y 100')
+                return
+        elif ingreso.replace(',','').isdigit() and ingreso.count(',') == 1 and float(ingreso.replace(',','.') <= 100):
+            return float(ingreso.replace(',','.'))
+
+        elif ingreso.replace('.','').isdigit() and ingreso.count('.') == 1 and float(ingreso) <= 100:
+            return float(ingreso)
+        else:
+            print ('El número ingresado es demasiado grande')
+            return
+        
+    
+    if ingreso.isdigit():
+        if 1 <= int(ingreso) <= 100:
+            return float(ingreso)
+        else:
+            print( 'El número es demasiado grande, pruebe entre 1 y 100')
+            return
+    elif ingreso.replace(',','').isdigit() and ingreso.count(',') == 1:
+        ingreso = float(ingreso.replace(',','.'))
+        if ingreso < 1:
+            # ej 0,3
+            return ingreso *100
+        elif ingreso <= 100:
+            # ej 16,5
+            return ingreso
+        else:
+            print ('El número ingresado es demasiado grande')
+            return
+    elif ingreso.replace('.','').isdigit() and ingreso.count('.') == 1:
+        if int(float(ingreso)) == 0:
+            return float(ingreso) *100
+        
+        elif 1 <= int(float(ingreso)) < 100:
+            return float(ingreso)
+        else:
+            print ('El número ingresado es demasiado grande')
+            return
+    else:
+        print( 'Ingreso no reconocido -> error')
+        return                        

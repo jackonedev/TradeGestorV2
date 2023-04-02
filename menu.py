@@ -1,5 +1,7 @@
-from tools.ingresar_datos import ingreso_bool, ingreso_bool_personalizado, entero_o_porcentual
-from tools.api_bingx import cargar_contrato
+from tools.ingresar_datos import ingreso_bool_personalizado, ingresar_tasa, ingreso_entero, ingreso_bool
+from tools.api_bingx import cargar_contrato, get_account_balance
+from tools.app_modules import comprobar_apis, imprimir_cuenta
+online = comprobar_apis()
 import os
 import pickle
 
@@ -28,6 +30,9 @@ for i, cuenta in enumerate(CUENTAS):
             with open(path, 'w') as f:
                 f.write('')
 
+
+
+
 while True:
 
     menu = """
@@ -47,40 +52,28 @@ while True:
 
 
     if opcion == "1":
-        # DEFINIR POSICION
+        # MAIN APP
 
-        """
->>  PROCEDIMIENTO DE DEFINICIÓN DE OPERACIONES
-        ## cuenta y operativa        
-        1.1 Selección de par
-        1.2 Búsqueda de contrato
-        1.3 Establecer datos de la cuenta
-        1.4 Confirmación de cuenta y operativa
 
-        ## posición y entradas
-        1.5 Dirección del trade
-        1.6 Definición de la posición (Diversificación#TODO: si a una entrada se ingesa 0, el resto son 0)
-        1.7 Obtención del precio de referencia
-        1.8. Definición del tipo de orden
-        1.9 Definición de los targets   #TODO: el valor porcentual del stoploss debe ser tomado en función de la entrada y no de la referencia
-                                        #TODO: si el ingreso termina con un . se considera porcentual (ejemplo 3. == 3%, 3.5. == 3.5%)
+
+        ##TODO: (2) Comprobacion del archivo active.tkl, debe cumplir determinado formato y devolver el nombre de la cuenta
+        path = os.path.join(os.getcwd(), 'cuentas', 'active.pkl')
+        with open(path, 'rb') as f:
+            cuenta = pickle.load(f)
+            if not isinstance(cuenta, list) and len(cuenta)==2:
+                print('La cuenta activa no tiene el formato correcto')
+                continue
+
+
+        ##  ## cuenta y operativa
+        nombre, dict_cta = tuple(cuenta)
+        for key in dict_cta.keys():
+                locals()[key] = dict_cta[key]
         
-        ## cálculo y registro operación
-        1.10 Cálculo del apalancamiento
-        1.11 Cálculo del lotaje por entrada
-        1.12 Confirmación de la operación
 
-        ## ejecución del trade
-        1.13 Ejecución de la operación
-        1.14 Actualización del registro de la operación
-        """
-
-        ##  ## cuenta y operativa        
-        from tools.app_modules import seleccionar_par, leer_cuenta, confirmar_cuenta
-        
-        
-        cuenta = leer_cuenta()
-        if not confirmar_cuenta(cuenta):
+        imprimir_cuenta(nombre, dict_cta)
+        continuar = ingreso_bool('Continuar?')
+        if not continuar:
             continue
 
         
@@ -141,62 +134,114 @@ while True:
 
 
     elif opcion == "2":
-        from tools.ingresar_datos import create_options_display, activate_options
-        from tools.app_modules import productoria
-
-        # CONFIGURACION DE APP
-
-        opciones = ['Configuración cuenta', 'Seleccionar cuenta', 'Activar contrato para otros pares', 'Volver']        
+        from tools.ingresar_datos import activate_options, ingreso_bool_personalizado
+        from tools.app_modules import productoria, calculo_operatoria
 
         display_app_conf = """
     ============================================================
-                    CONFIGURACION DE LA APP
+                        CONFIGURACION DE LA APP
     ============================================================
 
     """
         print(display_app_conf)
         
+        ### VERIFICACION DEL ESTADO DE LAS CUENTAS
+        # VERIFICACION DE CUENTA ONLINE
+        if not os.path.isfile('.env'):
+            print('No se verifica la existencia del fichero .env que contanga API_KEY y SECRET_KEY\nChequear yt: https://youtu.be/AM0Yy-VUaIM\n')
+        with open('cuentas/online.txt', 'r') as f:
+            cuenta_online = f.read()
+        if cuenta_online == '':
+            print('No existe información de la cuenta online.\n')
+        # VERIFICACION DE CUENTA OFFLINE
+        with open('cuentas/offline.txt', 'r') as f:
+            cuenta_offline = f.read()
+        if cuenta_offline == '':
+            print('No existe información de la cuenta offline.\n')
 
-    def calculo_operatoria(cuenta):
-        try:
-            vol_op = cuenta['vol_cta'] * cuenta['riesgo_op'] /100
-            vol_unidad = vol_op / cuenta['n_entradas']
-            1/vol_op
-            return vol_op, vol_unidad
-        except:
-            pass
 
-
+        opciones = ['Configuración cuenta', 'Seleccionar cuenta', 'Activar contrato para otros pares', 'Volver']        
         opcion_2 = activate_options(opciones)
-        if opcion_2 == 'Configuración cuenta':
-            opciones = ['Volumen Cuenta', 'Riesgo por operación', 'Cantidad de entradas por posición', 'Volver']
-            dict_2_1 = {'vol_cta': 0, 'riesgo_op': 0.0, 'n_entradas': 0, 'vol_op': 0.0, 'vol_unidad': 0.0}
 
+        if opcion_2 == 'Configuración cuenta':
+            print('\nSelecciona la cuenta que va a configurar:\n')
+            nombre = ingreso_bool_personalizado('ONLINE', 'OFFLINE', 'OFFLINE')
+            if not online and nombre == 'ONLINE':
+                print('La cuenta online no está activa. Seleccione otra cuenta.')
+                print ('Si ya creó el fichero .env, reinicie la app.\n')
+                continue
+
+            path = os.path.join(os.getcwd(), 'cuentas', nombre.lower() + '.txt')
+            with open(path, 'r') as f:
+                try:
+                    dict_2_1 = eval(f.read())
+                    print ('se verifican datos previos...\n')
+                    for key, value in dict_2_1.items():
+                        print ('{}: {}'.format(key, value))
+                except:
+                    print ('no se verifican datos previos')
+                    dict_2_1 = {'vol_cta': 0, 'riesgo_op': 0.0, 'n_entradas': 0, 'vol_op': 0.0, 'vol_unidad': 0.0}
+
+            opciones = ['Volumen Cuenta', 'Riesgo por operación', 'Cantidad de entradas por posición', 'Volver']
             while True:
                 opcion_2_1 = activate_options(opciones)
                 if not productoria(list(dict_2_1.values())) == 0:
                     if opcion_2_1 == 'Volver':
+                        path = os.path.join(os.getcwd(), 'cuentas', nombre.lower() + '.txt')
+                        with open(path, 'w') as f:
+                            f.write(str(dict_2_1))
+                        path = os.path.join(os.getcwd(), 'cuentas', 'active.pkl')
+                        with open(path, 'wb') as f:
+                            cuenta = nombre, dict_2_1
+                            pickle.dump(cuenta, f)
+                            imprimir_cuenta(nombre, dict_2_1)
+                            print('\nPor favor, verifique que la información sea correcta\n')
                         break
                 
                 if opcion_2_1 == 'Volumen Cuenta':
-                    dict_2_1['vol_cta'] = float(input('Ingrese el volumen de la cuenta: '))#TODO: depende si es la cuenta online u offline
+                    if online:
+                        dict_2_1['vol_cta'] = get_account_balance()
+                        if dict_2_1['vol_cta'] == 0:
+                            print ('La cuenta no posee fondos. Esto puede perjudicar el funcionamiento de la app.')
+                            break
+                    else:
+                        dict_2_1['vol_cta'] = float(input('Ingrese el volumen de la cuenta: '))
+                    dict_2_1['vol_op'], dict_2_1['vol_unidad'] = calculo_operatoria(dict_2_1)
+                    print ()
                     continue
                 elif opcion_2_1 == 'Riesgo por operación':
-                    dict_2_1['riesgo_op'] = float(input('Ingrese el riesgo por operación: '))#TOO: asegurarnos un formato consistente para calculo_operatoria()
+                    print('Ingrese el riesgo por operación:')
+                    dict_2_1['riesgo_op'] = ingresar_tasa()
+                    dict_2_1['vol_op'], dict_2_1['vol_unidad'] = calculo_operatoria(dict_2_1)
+                    print ()
                     continue
                 elif opcion_2_1 == 'Cantidad de entradas por posición':
-                    dict_2_1['n_entradas'] = int(input('Ingrese la cantidad de entradas por posición: '))#TODO: esta función ya la tengo
+                    dict_2_1['n_entradas'] = ingreso_entero('Ingrese la cantidad de entradas por posición: ')
+                    dict_2_1['vol_op'], dict_2_1['vol_unidad'] = calculo_operatoria(dict_2_1)
+                    print ()
                     continue
                 elif opcion_2_1 == 'Volver':
-
-
-
-                    pass
+                    if productoria(list(dict_2_1.values())) == 0:
+                        print ('AUN FALTAN VARIABLES POR DEFINIR\n')
 
         elif opcion_2 == 'Seleccionar cuenta':
-            pass
+            print('\nSelecciona la cuenta que va a utilizar:\n')
+            nombre = ingreso_bool_personalizado('ONLINE', 'OFFLINE', 'OFFLINE')
+            if not online and nombre == 'ONLINE':
+                print('La cuenta online no está activa. Seleccione otra cuenta.')
+                print ('Si ya creó el fichero .env, reinicie la app.\n')
+                continue
+
+            path = os.path.join(os.getcwd(), 'cuentas', '{}.txt'.format(nombre.lower()))
+            with open(path, 'r') as f:
+                dict_2_1 = eval(f.read())
+            path = os.path.join(os.getcwd(), 'cuentas', 'active.pkl')
+            with open(path, 'wb') as f:
+                pickle.dump([nombre, dict_2_1], f)
+            print ('Cuenta {} activada'.format(nombre))
 
         elif opcion_2 == 'Activar contrato para otros pares':
+            print ('Próximas actualizaciones')
             pass
 
         elif opcion_2 == 'Volver':
@@ -204,46 +249,6 @@ while True:
 
         else:
             print("Opción inválida, por favor ingresa una opción válida.")
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
     elif opcion == "0":

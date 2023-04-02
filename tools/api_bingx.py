@@ -5,12 +5,14 @@ import time
 from http.client import HTTPException
 import hmac
 import hashlib
-
+import numpy as np
 
 load_dotenv()
-
-API_KEY = os.environ['API_KEY'] 
-SECRET_KEY = os.environ['SECRET_KEY'] 
+try:
+    API_KEY = os.environ['API_KEY'] 
+    SECRET_KEY = os.environ['SECRET_KEY'] 
+except KeyError:
+    print ('\n-CUENTA ONLINE INHABILITADA-\n')
 
 URL = 'https://open-api.bingx.com'
 
@@ -91,3 +93,7 @@ def cargar_contrato(par):
         contract = eval(f.read())
     return contract
     
+
+def get_account_balance():
+    account_balance = api_request('/openApi/swap/v2/user/balance', method='GET', sign=True)
+    return np.floor(float(account_balance['data']['balance']['balance']))
