@@ -105,20 +105,6 @@ def price_XRP():
     return float(api_request('/openApi/swap/v2/quote/price', query_params='symbol=XRP-USDT')['data']['price'])
 
 
-def obtener_contrato(par):
-    contracts = api_request(services['GET_1'])
-    contracts = pd.DataFrame(contracts['data'])
-    if par == 'XRP':
-        XRP_mask = contracts['symbol'].apply(lambda x: x.startswith('XRP')).values
-        XRP_contract = contracts.loc[XRP_mask]
-        return XRP_contract.iloc[0]
-    elif par == 'BTC':
-        BTC_mask = contracts['symbol'].apply(lambda x: x.startswith('BTC')).values
-        BTC_contracts = contracts.loc[BTC_mask]
-        BTC_contract = BTC_contracts.iloc[0]
-        BTCD_contract = BTC_contracts.iloc[1]
-        return BTC_contract
-    return
 
 
 
@@ -166,6 +152,7 @@ def generar_rows(n_entradas, estado_entradas, entradas, sls, qty_entradas):
 
 if __name__ == '__main__':
     from tools.ingresar_datos import ingreso_bool, ingreso_bool_personalizado, entero_o_porcentual
+    from tools.app_modules import cargar_contrato
     from itertools import count
 
     print ('''
@@ -186,7 +173,7 @@ Pares: BTC-USDT  |  XRP-USDT
     print ('Obteniendo datos del contrato...')
     if not par:
         exit()
-    contract = obtener_contrato(par)
+    contract = cargar_contrato(par)
     qty_precision = contract['quantityPrecision']
     price_precision = contract['pricePrecision']
 

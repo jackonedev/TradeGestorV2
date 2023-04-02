@@ -41,3 +41,9 @@ def imprimir_cuenta(nombre, cuenta):
             print ('{}: {}'.format(key, value))
 
 
+def cargar_contrato(par):
+    """Se carga desde los contratos guardados localmente"""
+    name_contract = list(filter(lambda x: x.startswith(par.upper()), os.listdir('contratos')))[0]
+    with open(f'contratos/{name_contract}', 'r') as f:
+        contract = eval(f.read())
+    return contract

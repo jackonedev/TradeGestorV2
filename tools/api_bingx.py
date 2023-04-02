@@ -87,12 +87,6 @@ def actualizar_contratos():
         with open(f'contratos/{name_asset}.txt', 'w') as f:
             f.write(str(data[i]))
     
-def cargar_contrato(par):
-    name_contract = list(filter(lambda x: x.startswith(par.upper()), os.listdir('contratos')))[0]
-    with open(f'contratos/{name_contract}', 'r') as f:
-        contract = eval(f.read())
-    return contract
-    
 
 def get_account_balance():
     account_balance = api_request('/openApi/swap/v2/user/balance', method='GET', sign=True)

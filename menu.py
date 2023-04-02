@@ -1,5 +1,5 @@
 from tools.ingresar_datos import ingreso_bool_personalizado, ingresar_tasa, ingreso_entero, ingreso_bool
-from tools.api_bingx import cargar_contrato, get_account_balance
+from tools.api_bingx import cargar_contrato, actualizar_contratos, get_account_balance
 from tools.app_modules import comprobar_apis, imprimir_cuenta
 online = comprobar_apis()
 import os
@@ -231,6 +231,7 @@ while True:
             print ('Cuenta {} activada'.format(nombre))
 
         elif opcion_2 == 'Activar contrato para otros pares':
+            actualizar_contratos()
             print ('Próximas actualizaciones')
             pass
 

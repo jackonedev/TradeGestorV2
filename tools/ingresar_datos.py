@@ -29,6 +29,13 @@ def ingreso_bool_personalizado(op1, op2, default=None):
     if default and ingreso=='':
         return default
     if not (ingreso == '1' or ingreso == '0'):
+        try:
+            with open('contratos/{}.txt'.format(ingreso.upper()),'r') as f:
+                f.read()
+            return ingreso.upper()
+            pass
+        except:
+            pass
         chance = next(x_bool) + 1
         print(( 'Intento {} de {}'.format(chance, x_bool_limit)))
         ingreso = input('>> ')
