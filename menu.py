@@ -1,6 +1,6 @@
 from tools.ingresar_datos import ingreso_bool_personalizado, ingresar_tasa, ingreso_entero, ingreso_bool
-from tools.api_bingx import cargar_contrato, actualizar_contratos, get_account_balance
-from tools.app_modules import comprobar_apis, imprimir_cuenta
+from tools.api_bingx import actualizar_contratos, get_account_balance
+from tools.app_modules import comprobar_apis, imprimir_cuenta, cargar_contrato
 online = comprobar_apis()
 import os
 import pickle
@@ -69,7 +69,7 @@ while True:
         
         ## CONFIRMACION DE CUENTA
         imprimir_cuenta(nombre, dict_cta)
-        continuar = ingreso_bool('Continuar?')
+        continuar = ingreso_bool('\nContinuar?')
         if not continuar:
             continue
 
@@ -84,7 +84,6 @@ while True:
         ## 1.1 Selección del par a operar
         print ('Seleccione par a operar:')
         par = ingreso_bool_personalizado('BTC', 'XRP')
-        print ('Obteniendo datos del contrato...')
         if not par:
             print ('Fallo la operativa')
             continue
@@ -92,6 +91,7 @@ while True:
         ##  1.2 Búsqueda de contrato, y obtención de cifras significativas
         contract = cargar_contrato(par)
         par = contract['asset']
+        currency = contract['currency']
         symbol = contract['symbol']
         qty_precision = contract['quantityPrecision']
         price_precision = contract['pricePrecision']
@@ -101,7 +101,31 @@ while True:
 
         # Actualizar a leer desde el archivo local
         
-        ##  1.5 Dirección del trade
+        ##  1.3 Dirección del trade
+        print ('Indique dirección del trade:')
+        direccion_trade = ingreso_bool_personalizado('LONG', 'SHORT')
+        ## 1.4 Verificacion de la operativa
+        file_name = '{}_{}_{}'.format(nombre, direccion_trade, par)
+        export_data_inicial = """
+>>    DATOS DE LA CUENTA {}
+        - volumen cuenta  = {}
+        - riesgo por operación = {}%
+        - volumen operacion = {}
+
+>>    DATOS DE LA OPERACION EN {}
+        - par = {}
+        - nº entradas = {}
+        - volumen por entrada = {} {}
+
+        """.format(nombre, vol_cta, riesgo_op, vol_op, direccion_trade, symbol, n_entradas, round(vol_unidad,2), currency)
+        print (export_data_inicial)
+
+
+        continuar = ingreso_bool('\nContinuar?')
+        if not continuar:
+            continue
+
+
         ##  1.6 Definición de la posición
         ##  1.7 Obtención del precio de referencia
         ##  1.8. Definición del tipo de orden

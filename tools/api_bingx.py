@@ -41,14 +41,16 @@ def generate_signature(secret_key, query_params):
         ).hexdigest()
     return signature
 
-def api_request(service, method='GET', query_params=None, sign=False):
+def api_request(service, method='GET', query_params=None, header=None, sign=False):
     """docstring"""
     ROOT_URL = URL
     url = f'{ROOT_URL}{service}'
-    header = {#TODO: header only if user set his API key
-        'Content-Type': 'application/json',
-        'X-BX-APIKEY': API_KEY,
+    header = {
+        'Content-Type': 'application/json'
     }
+
+    if header:
+        header.update({'X-BX-APIKEY': API_KEY})
 
     timestamp = int(time.time() *1000)
     params = f'timestamp={timestamp}'
@@ -80,13 +82,13 @@ def api_request(service, method='GET', query_params=None, sign=False):
 
 def actualizar_contratos():
     """Se conecta a la API de BingX y descarga todos los contratos futuros disponibles en el disco local"""
-    contracts = api_request(services['GET_1'])
+    contracts = api_request(services['GET_1'], header=True)
     data = contracts['data']
     for i in range(len(data)):
         name_asset = contracts['data'][i]['asset']
         with open(f'contratos/{name_asset}.txt', 'w') as f:
             f.write(str(data[i]))
-    
+
 
 def get_account_balance():
     account_balance = api_request('/openApi/swap/v2/user/balance', method='GET', sign=True)
