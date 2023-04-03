@@ -81,7 +81,7 @@ while True:
 """
         print (display_app_1)
 
-        ## SELECCION DEL PAR
+        ## 1.1 Selección del par a operar
         print ('Seleccione par a operar:')
         par = ingreso_bool_personalizado('BTC', 'XRP')
         print ('Obteniendo datos del contrato...')
@@ -89,13 +89,18 @@ while True:
             print ('Fallo la operativa')
             continue
 
-        ##  1.2 Búsqueda de contrato
+        ##  1.2 Búsqueda de contrato, y obtención de cifras significativas
+        contract = cargar_contrato(par)
+        par = contract['asset']
+        symbol = contract['symbol']
+        qty_precision = contract['quantityPrecision']
+        price_precision = contract['pricePrecision']
+        max_leverage_l = contract['maxLongLeverage']
+        max_leverage_s = contract['maxShortLeverage']
+
+
         # Actualizar a leer desde el archivo local
-        from tools.api_bingx import cargar_contrato
-        contrato = cargar_contrato(par)
-        ##  1.3 Establecer datos de la cuenta
-        #TODO: leer los datos desde un archivo externo
-        cuenta = leer_cuenta('demo')      ##  ## TRADE: posición y entradas
+        
         ##  1.5 Dirección del trade
         ##  1.6 Definición de la posición
         ##  1.7 Obtención del precio de referencia
