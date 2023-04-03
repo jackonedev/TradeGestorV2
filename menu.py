@@ -154,20 +154,21 @@ while True:
         ##  1.6 Obtención del precio de referencia para los cálculos
         print ('Obteniendo precio de {}...'.format(symbol))
         benchmark = get_price(symbol)
-
+        print ('Precio actual de {} = {} {}'.format(symbol, benchmark, currency))
 
         ##  1.7 Diversificación de la posición (II)
         target_entradas = []
         entrada_count = count(1)
         for estado in estado_entradas:
             if estado:
-                print (f'Entrada {next(entrada_count)}')
+                print (f'\nEntrada Nº {next(entrada_count)}')
                 # 1.7.1 Tipo de orden
-                orden_tipo = ingreso_bool_personalizado('MARKET', 'LIMIT', default='MARKET')
+                print ('Tipo de orden:')
+                tipo_orden = ingreso_bool_personalizado('MARKET', 'LIMIT', default='LIMIT')
                 # 1.7.2 Precio de entrada
-                if orden_tipo == 'MARKET':
+                if tipo_orden == 'MARKET':
                     entrada = benchmark
-                elif orden_tipo == 'LIMIT':
+                elif tipo_orden == 'LIMIT':
                     print ('Orden LIMIT | precio actual {} {}'.format(benchmark, currency))
                     entrada, pct = entero_o_porcentual('Precio de ENTRADA | en blanco significa precio actual:')
                     if pct and direccion_trade=='LONG':
@@ -177,10 +178,11 @@ while True:
                     elif not entrada:
                         entrada = benchmark
                 else:
-                    print ('Fallo la operativa')
+                    print ('Falló la operativa')
                     continue
+                print ('Orden {} en el nivel = {} {}'.format(tipo_orden, entrada, currency))
                 # 1.7.3 Precio de stoploss
-                sl, pct = entero_o_porcentual('\nIndique precio de STOPLOSS:')
+                sl, pct = entero_o_porcentual('Indique precio de STOPLOSS:')
                 chance_sl = count(1)
                 if pct and direccion_trade=='LONG':
                     sl = entrada * (1 - sl)
@@ -198,6 +200,7 @@ while True:
                             print('error en la operativa- el stop loss quedo vacio')
                         else:
                             break
+                print ('StopLoss = {} {}'.format(sl, currency))
                 target_entradas.append((entrada, sl))
 
                 # 1.7.4 Verificación de la congruencia de la operación
