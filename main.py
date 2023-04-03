@@ -352,9 +352,7 @@ Pares: BTC-USDT  |  XRP-USDT
     ######      ######      ######
 
     # CREAR CARPETA
-    path = os.getcwd()
-    file_location = 'registro'
-    path = os.path.join(path, file_location)
+    path = os.path.join(os.getcwd(), 'registro')
     os.makedirs(path, exist_ok=True)
 
     # OBTENER DATA DE HOY

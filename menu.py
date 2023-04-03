@@ -1,9 +1,17 @@
-from tools.ingresar_datos import ingreso_bool_personalizado, ingresar_tasa, ingreso_entero, ingreso_bool
-from tools.api_bingx import actualizar_contratos, get_account_balance
-from tools.app_modules import comprobar_apis, imprimir_cuenta, cargar_contrato
+import numpy as np
+from tools.ingresar_datos import ingreso_bool_personalizado, ingresar_tasa, ingreso_entero, ingreso_bool, entero_o_porcentual
+from tools.api_bingx import actualizar_contratos, get_account_balance, get_price
+from tools.app_modules import comprobar_apis, imprimir_cuenta, cargar_contrato, apalancamiento, generar_rows
 online = comprobar_apis()
 import os
 import pickle
+from itertools import count
+from datetime import datetime
+from rich.console import Console
+from rich.table import Table
+import codecs
+
+
 
 print ('''
     ============================================================
@@ -49,6 +57,18 @@ while True:
 """
     print(menu)
     opcion = input("Ingrese una opción: ")
+
+
+
+#############################################################################################################
+#############################################################################################################
+#############################################################################################################
+#############################################################################################################
+#                                       CALCULADORA DE POSICIONES                                           #
+#############################################################################################################
+#############################################################################################################
+#############################################################################################################
+#############################################################################################################
 
 
     if opcion == "1":
@@ -99,13 +119,11 @@ while True:
         max_leverage_s = contract['maxShortLeverage']
 
 
-        # Actualizar a leer desde el archivo local
-        
         ##  1.3 Dirección del trade
         print ('Indique dirección del trade:')
         direccion_trade = ingreso_bool_personalizado('LONG', 'SHORT')
+
         ## 1.4 Verificacion de la operativa
-        file_name = '{}_{}_{}'.format(nombre, direccion_trade, par)
         export_data_inicial = """
 >>    DATOS DE LA CUENTA {}
         - volumen cuenta  = {}
@@ -126,27 +144,180 @@ while True:
             continue
 
 
-        ##  1.6 Definición de la posición
-        ##  1.7 Obtención del precio de referencia
-        ##  1.8. Definición del tipo de orden
-        ##  1.9 Definición de los targets
+        ## 1.5 Diversificación de la posición (I)
+        print ('Indique cuales entradas desea colocar:')
+        estado_entradas = []
+        for i in range(n_entradas):
+            estado_entradas.append(ingreso_bool(f'Colocar entrada {i+1}?'))
+        print (f'Entradas COLOCADAS: {sum(estado_entradas)}  |  Entradas ANULADAS: {len(estado_entradas)-sum(estado_entradas)}')
+        
+        
+        ##  1.6 Obtención del precio de referencia para los cálculos
+        print ('Obteniendo precio de {}...'.format(symbol))
+        benchmark = get_price(symbol)
 
 
-        ##  ## cálculo y registro operación
-        ##  1.10 Cálculo del apalancamiento
-        ##  1.11 Cálculo del lotaje por entrada
-        ##  1.12 Confirmación de la operación
-        ##  
-        ##  ## ejecución del trade
-        ##  1.13 Ejecución de la operación
-        ##  1.14 Actualización del registro de la operación
+        ##  1.7 Diversificación de la posición (II)
+        target_entradas = []
+        entrada_count = count(1)
+        for estado in estado_entradas:
+            if estado:
+                print (f'Entrada {next(entrada_count)}')
+                # 1.7.1 Tipo de orden
+                orden_tipo = ingreso_bool_personalizado('MARKET', 'LIMIT', default='MARKET')
+                # 1.7.2 Precio de entrada
+                if orden_tipo == 'MARKET':
+                    entrada = benchmark
+                elif orden_tipo == 'LIMIT':
+                    print ('Orden LIMIT | precio actual {} {}'.format(benchmark, currency))
+                    entrada, pct = entero_o_porcentual('Precio de ENTRADA | en blanco significa precio actual:')
+                    if pct and direccion_trade=='LONG':
+                        entrada = benchmark *(1-entrada)
+                    elif pct and direccion_trade=='SHORT':
+                        entrada = benchmark *(1+entrada)
+                    elif not entrada:
+                        entrada = benchmark
+                else:
+                    print ('Fallo la operativa')
+                    continue
+                # 1.7.3 Precio de stoploss
+                sl, pct = entero_o_porcentual('\nIndique precio de STOPLOSS:')
+                chance_sl = count(1)
+                if pct and direccion_trade=='LONG':
+                    sl = entrada * (1 - sl)
+                elif pct and direccion_trade=='SHORT':
+                    sl = entrada * (1 + sl)
+                elif not sl:#DRY
+                    print('error en la operativa- el stop loss quedo vacio')
+                    while next(chance_sl) < 5:
+                        sl, pct = entero_o_porcentual('Indique precio de STOPLOSS:')
+                        if pct and direccion_trade=='LONG':
+                            sl = entrada * (1 - sl)
+                        elif pct and direccion_trade=='SHORT':
+                            sl = entrada * (1 + sl)
+                        elif not sl:
+                            print('error en la operativa- el stop loss quedo vacio')
+                        else:
+                            break
+                target_entradas.append((entrada, sl))
+
+                # 1.7.4 Verificación de la congruencia de la operación
+                for entrada, sl in target_entradas:
+                    if direccion_trade == 'LONG':
+                        if entrada <= sl:
+                            raise ValueError('En un trade LONG, la entrada no puede ser menor que el StopLoss')
+                    elif direccion_trade == 'SHORT':
+                        if entrada >= sl:
+                            raise ValueError('En un trade SHORT, la entrada no puede ser mayor que el StopLoss')
+
+
+        ##  1.8 Dimensionamiento del trade
+        ##  1.8.1 Obteniendo entradas y sacando el promedio
+        entradas = [entrada for entrada, _ in target_entradas]
+        entrada_promedio = np.mean(entradas)
+        ## 1.8.2 Obtener el stop-loss más alejado
+        sls = [sl for _, sl in target_entradas]
+        if direccion_trade == 'LONG':
+            worst_sl = np.min(sls)
+        elif direccion_trade == 'SHORT':
+            worst_sl = np.max(sls)
+        ## 1.8.3 Obtener el apalancamiento máximo
+        apal_x, precio_liq = apalancamiento(entrada_promedio, worst_sl, direccion_trade)
+        if direccion_trade == 'LONG' and apal_x > max_leverage_l:
+            print(f'El apalancamiento máximo para este par es de {max_leverage_l}x\nEl apalancamiento calculado es de {apal_x}x')
+            continue
+        if direccion_trade == 'SHORT' and apal_x > max_leverage_s:
+            print(f'El apalancamiento máximo para este par es de {max_leverage_s}x\nEl apalancamiento calculado es de {apal_x}x')
+            continue
+        ## 1.8.4 Obtener la cantidad de monedas a adquirir por entrada
+        qty_entradas = [round(vol_unidad/abs(x[0] - x[1]),qty_precision) for x in target_entradas]
+
+
+        ##  1.9 Descripción del trade
+        export_data_trade =f"""
+>>  DESCRIPCION TRADE {symbol} {direccion_trade}
+        - Precio de referencia = {benchmark}
+        - Entrada promedio = {round(entrada_promedio, price_precision)}
+        - StopLoss más alejado = {round(worst_sl, price_precision)}
+        - Apalancamiento = {apal_x}
+        - Precio de liquidación = {round(precio_liq, price_precision)}
+        - Total comerciado = {sum([round(qty_e, qty_precision) for qty_e in qty_entradas])}
+        - Pérdidas peor escenario = {round(sum([abs(entradas[i] - sls[i])*qty_entradas[i] for i in range(sum(estado_entradas))]), 2)}
+        """
+        print (export_data_trade)
+
+        console = Console(record=True)
+        table = Table(title="RESUMEN ENTRADAS: {} | PAR: {}".format(direccion_trade, par))
+    
+        table.add_column("Nº", justify="right", style="cyan", no_wrap=True)
+        table.add_column("CONDICION", style="cyan")
+        table.add_column("ENTRADA", justify="right", style="cyan")
+        table.add_column("STOPLOSS", justify="right", style="cyan")
+        table.add_column("CANTIDAD", justify="right", style="cyan")
+        table.add_column("RIESGO", justify="right", style="cyan")
+
+        row_1, row_2, row_3, row_4, row_5, row_6 = generar_rows(n_entradas, estado_entradas, entradas, sls, qty_entradas)
+        for i in range(n_entradas):
+            table.add_row(row_1[i], row_2[i], row_3[i], row_4[i], row_5[i], row_6[i])
+        console.print(table)
+
+        ##  1.10 Confirmar trade
+        continuar = ingreso_bool('\nDesea confirmar el trade?')
+        if not continuar:
+            continue
+        
+        ##  1.11 Exportar datos
+        ##  1.11.1 Creamos el directorio "registro"
+        path = os.path.join(os.getcwd(), 'registro')
+        os.makedirs(path, exist_ok=True)
+
+        ##  1.11.2 Obtenemos datos del fecha y hora actual
+        fecha_actual = datetime.now()
+        nombre_mes = fecha_actual.strftime("%B")
+        hora = '\n\n\nTrade calculado el día {} a las {}'.format(fecha_actual.strftime("%d de {mes} de %Y").format(mes=nombre_mes.title()), fecha_actual.strftime("%H:%M:%S"))
+
+        ## 1.11.3 Verificamos los nombre existentes y definimos nombre
+        file_names = os.listdir(path=path)
+        if len(file_names) == 0:
+            file_name = f'{nombre}_{direccion_trade}_{par}_{fecha_actual.strftime("%d_{}").format(nombre_mes)}-01.txt'
+        else:
+            last_file = file_names[-1]
+            i = last_file.split('-')[-1]
+            if i.endswith == '.txt':
+                i = int(i[:-4])
+            file_name = f'{nombre}_{direccion_trade}_{par}_{fecha_actual.strftime("%d_{}").format(nombre_mes)}-{i+1:02d}.txt'
+        file_name = os.path.join(path, file_name)
+        ## 1.11.4 Exportamos la data en formato .txt
+        with codecs.open(file_name, 'w', encoding='utf-8') as f:
+            f.write('TradeGestorDEMO: v2 \nCalculadora de riesgo y gestor de posiciones\nExchange: BingX\n')
+            f.write(export_data_inicial)
+            f.write(export_data_trade)
+            f.write('\n\n\n')
+            f.write(console.export_text())
+            f.write(hora)
+            f.write('\n   -- Desarrollado por Jackone Action Software Company\n   -- jackone.action.software@gmail.com')
+
+
+        ##  1.12 Ejecutar orden
+        if nombre == 'OFFLINE':
+            print ('La cuenta OFFLINE no soporta colocación de órdenes.')
+            print ('Volviendo al menu principal')
+            continue
 
 
 
 
 
 
-
+#############################################################################################################
+#############################################################################################################
+#############################################################################################################
+#############################################################################################################
+#                                       CONFIGURACION DE LA APP                                             #
+#############################################################################################################
+#############################################################################################################
+#############################################################################################################
+#############################################################################################################
 
 
 

@@ -91,5 +91,9 @@ def actualizar_contratos():
 
 
 def get_account_balance():
-    account_balance = api_request('/openApi/swap/v2/user/balance', method='GET', sign=True)
+    account_balance = api_request('/openApi/swap/v2/user/balance', method='GET', header=True, sign=True)
     return np.floor(float(account_balance['data']['balance']['balance']))
+
+
+def get_price(symbol):
+    return float(api_request('/openApi/swap/v2/quote/price', query_params='symbol={}'.format(symbol))['data']['price'])

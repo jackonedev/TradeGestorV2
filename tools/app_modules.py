@@ -47,3 +47,32 @@ def cargar_contrato(par):
     with open(f'contratos/{name_contract}', 'r') as f:
         contract = eval(f.read())
     return contract
+
+
+def apalancamiento(precio_entrada, worst_sl, direccion_trade):
+    """
+    precio_entrada / apalancamiento = distancia entre el precio de entrada y el stop loss más alejado
+    Para trabajar con margen de seguridad le quitamos una unidad al apalancamiento
+    """
+    dist = abs(precio_entrada - worst_sl)
+    apalancamiento = int(precio_entrada / dist) -2
+    if direccion_trade == 'LONG':
+        precio_liquidacion = precio_entrada *(1 - 1/apalancamiento)
+    elif direccion_trade == 'SHORT':
+        precio_liquidacion = precio_entrada *(1 + 1/apalancamiento)
+    return apalancamiento, precio_liquidacion
+
+
+def generar_rows(n_entradas, estado_entradas, entradas, sls, qty_entradas, price_precision, qty_precision):
+    id = [str(i) for i in range(1, n_entradas+1)]
+    estado_entradas = ['Calculada' if e else 'Omitida' for e in estado_entradas]
+    entradas = [entradas[i] if i < len(entradas) else 0.0 for i in range(n_entradas)]
+    sls = [sls[i] if i < len(sls) else 0.0 for i in range(n_entradas)]
+    qty_entradas = [qty_entradas[i] if i < len(qty_entradas) else 0.0 for i in range(n_entradas)]
+    riesgo = [abs(entradas[i] - sls[i])*qty_entradas[i] for i in range(n_entradas)]
+
+    entradas = [str(round(elemento, price_precision))for elemento in entradas]
+    sls = [str(round(elemento, price_precision))for elemento in sls]
+    qty_entradas = [str(round(elemento, qty_precision))for elemento in qty_entradas]
+    riesgo = [str(round(elemento, 1))for elemento in riesgo]
+    return id, estado_entradas, entradas, sls, qty_entradas, riesgo
