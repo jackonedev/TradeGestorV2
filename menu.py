@@ -168,7 +168,7 @@ while True:
                 # 1.7.2 Precio de entrada
                 if tipo_orden == 'MARKET':
                     entrada = benchmark
-                elif tipo_orden == 'LIMIT':
+                elif tipo_orden == 'LIMIT':#TODO: Redefinir la forma del ingreso entrada LIMIT
                     print ('Orden LIMIT | precio actual {} {}'.format(benchmark, currency))
                     entrada, pct = entero_o_porcentual('Precio de ENTRADA | en blanco significa precio actual:')#TODO: QUE PASA CON XRP QUE VALE MENOS DE 1 DOLAR?
                     if pct and direccion_trade=='LONG':
@@ -182,7 +182,7 @@ while True:
                     continue
                 print ('Orden {} en el nivel = {} {}'.format(tipo_orden, entrada, currency))
                 # 1.7.3 Precio de stoploss
-                sl, pct = entero_o_porcentual('Indique precio de STOPLOSS:')
+                sl, pct = entero_o_porcentual('Indique precio de STOPLOSS:')#TODO: no es necesario que sea igual a de entrada
                 chance_sl = count(1)
                 if pct and direccion_trade=='LONG':
                     sl = entrada * (1 - sl)
@@ -197,9 +197,7 @@ while True:
                         elif pct and direccion_trade=='SHORT':
                             sl = entrada * (1 + sl)
                         elif not sl:
-                            print('error en la operativa- el stop loss quedo vacio')
-                        else:
-                            break
+                            print('error en la operativa- el stop loss quedó vacio')
                 print ('StopLoss = {} {}'.format(sl, currency))
                 target_entradas.append((entrada, sl))
 
@@ -301,6 +299,7 @@ while True:
 
 
         ##  1.12 Ejecutar orden
+        ## 1.12.1 Comprobar cuenta ONLINE
         if nombre == 'OFFLINE':
             print ('La cuenta OFFLINE no soporta colocación de órdenes.')
             print ('Volviendo al menu principal')
