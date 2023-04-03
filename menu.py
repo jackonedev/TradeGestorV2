@@ -170,7 +170,7 @@ while True:
                     entrada = benchmark
                 elif tipo_orden == 'LIMIT':
                     print ('Orden LIMIT | precio actual {} {}'.format(benchmark, currency))
-                    entrada, pct = entero_o_porcentual('Precio de ENTRADA | en blanco significa precio actual:')
+                    entrada, pct = entero_o_porcentual('Precio de ENTRADA | en blanco significa precio actual:')#TODO: QUE PASA CON XRP QUE VALE MENOS DE 1 DOLAR?
                     if pct and direccion_trade=='LONG':
                         entrada = benchmark *(1-entrada)
                     elif pct and direccion_trade=='SHORT':
@@ -189,7 +189,7 @@ while True:
                 elif pct and direccion_trade=='SHORT':
                     sl = entrada * (1 + sl)
                 elif not sl:#DRY
-                    print('error en la operativa- el stop loss quedo vacio')
+                    print('error en la operativa- el stop loss quedó vacio')
                     while next(chance_sl) < 5:
                         sl, pct = entero_o_porcentual('Indique precio de STOPLOSS:')
                         if pct and direccion_trade=='LONG':
@@ -258,7 +258,7 @@ while True:
         table.add_column("CANTIDAD", justify="right", style="cyan")
         table.add_column("RIESGO", justify="right", style="cyan")
 
-        row_1, row_2, row_3, row_4, row_5, row_6 = generar_rows(n_entradas, estado_entradas, entradas, sls, qty_entradas)
+        row_1, row_2, row_3, row_4, row_5, row_6 = generar_rows(n_entradas, estado_entradas, entradas, sls, qty_entradas, price_precision, qty_precision)
         for i in range(n_entradas):
             table.add_row(row_1[i], row_2[i], row_3[i], row_4[i], row_5[i], row_6[i])
         console.print(table)
