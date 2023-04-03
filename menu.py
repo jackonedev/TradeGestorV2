@@ -134,12 +134,11 @@ while True:
         - par = {}
         - nº entradas = {}
         - volumen por entrada = {} {}
-
         """.format(nombre, vol_cta, riesgo_op, vol_op, direccion_trade, symbol, n_entradas, round(vol_unidad,2), currency)
         print (export_data_inicial)
 
 
-        continuar = ingreso_bool('\nContinuar?')
+        continuar = ingreso_bool('Continuar?')
         if not continuar:
             continue
 

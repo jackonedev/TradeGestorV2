@@ -45,26 +45,31 @@ def api_request(service, method='GET', query_params=None, header=None, sign=Fals
     """docstring"""
     ROOT_URL = URL
     url = f'{ROOT_URL}{service}'
-    header = {
+    headers = {
         'Content-Type': 'application/json'
     }
 
     if header:
-        header.update({'X-BX-APIKEY': API_KEY})
+        headers.update({'X-BX-APIKEY': API_KEY})
 
     timestamp = int(time.time() *1000)
     params = f'timestamp={timestamp}'
     if query_params:
         params += f'&{query_params}'
+
+
+
     if sign:
         signature = generate_signature(SECRET_KEY, params)
         params += f'&signature={signature}'
     
+
+
     url += f'?{params}'
     if method == 'GET':
-        response = requests.get(url, headers=header)
+        response = requests.get(url, headers=headers)
     else:
-        response = requests.post(url, headers=header)
+        response = requests.post(url, headers=headers)
 
     if response.status_code != 200:
         print (f'status_code: {response.status_code}')
@@ -91,9 +96,9 @@ def actualizar_contratos():
 
 
 def get_account_balance():
-    account_balance = api_request('/openApi/swap/v2/user/balance', method='GET', header=True, sign=True)
+    account_balance = api_request(services['GET_2'], method='GET', header=True, sign=True)
     return np.floor(float(account_balance['data']['balance']['balance']))
 
 
 def get_price(symbol):
-    return float(api_request('/openApi/swap/v2/quote/price', query_params='symbol={}'.format(symbol))['data']['price'])
+    return float(api_request(services['GET_3'], query_params=f'symbol={symbol}')['data']['price'])
