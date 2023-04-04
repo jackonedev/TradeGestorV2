@@ -1,7 +1,7 @@
 import numpy as np
 from tools.ingresar_datos import ingreso_bool_personalizado, ingresar_tasa, ingreso_entero, ingreso_bool, entero_o_porcentual
 from tools.api_bingx import actualizar_contratos, get_account_balance, get_price
-from tools.app_modules import comprobar_apis, imprimir_cuenta, cargar_contrato, apalancamiento, generar_rows
+from tools.app_modules import comprobar_apis, imprimir_cuenta, cargar_contrato, apalancamiento, generar_rows, obtener_sl, crear_directorio
 online = comprobar_apis()
 import os
 import pickle
@@ -86,7 +86,13 @@ while True:
         nombre, dict_cta = tuple(cuenta)
         for key in dict_cta.keys():
                 locals()[key] = dict_cta[key]
-        
+
+        if nombre == 'ONLINE':
+            try:
+                vol_cta = get_account_balance()
+            except:
+                print ('Ocurrió un error al querer actualizar el volumen de la cuenta')
+
         ## CONFIRMACION DE CUENTA
         imprimir_cuenta(nombre, dict_cta)
         continuar = ingreso_bool('\nContinuar?')
@@ -153,7 +159,11 @@ while True:
         
         ##  1.6 Obtención del precio de referencia para los cálculos
         print ('Obteniendo precio de {}...'.format(symbol))
-        benchmark = get_price(symbol)
+        try:
+            benchmark = get_price(symbol)
+        except:
+            print ('Error al obtener precio...\nPor favor ingreselo manualmente')
+            benchmark = float(input('Precio de {} = '.format(par)))
         print ('Precio actual de {} = {} {}'.format(symbol, benchmark, currency))
 
         ##  1.7 Diversificación de la posición (II)
@@ -161,16 +171,16 @@ while True:
         entrada_count = count(1)
         for estado in estado_entradas:
             if estado:
-                print (f'\nEntrada Nº {next(entrada_count)}')
+                print (f'\n>>  ENTRADA Nº {next(entrada_count)}')
                 # 1.7.1 Tipo de orden
                 print ('Tipo de orden:')
                 tipo_orden = ingreso_bool_personalizado('MARKET', 'LIMIT', default='LIMIT')
                 # 1.7.2 Precio de entrada
                 if tipo_orden == 'MARKET':
                     entrada = benchmark
-                elif tipo_orden == 'LIMIT':#TODO: Redefinir la forma del ingreso entrada LIMIT
+                elif tipo_orden == 'LIMIT':
                     print ('Orden LIMIT | precio actual {} {}'.format(benchmark, currency))
-                    entrada, pct = entero_o_porcentual('Precio de ENTRADA | en blanco significa precio actual:')#TODO: QUE PASA CON XRP QUE VALE MENOS DE 1 DOLAR?
+                    entrada, pct = entero_o_porcentual('Precio de ENTRADA | en blanco significa precio actual:')
                     if pct and direccion_trade=='LONG':
                         entrada = benchmark *(1-entrada)
                     elif pct and direccion_trade=='SHORT':
@@ -180,25 +190,19 @@ while True:
                 else:
                     print ('Falló la operativa')
                     continue
-                print ('Orden {} en el nivel = {} {}'.format(tipo_orden, entrada, currency))
+                #TODO: revisar print# print ('Orden {} en el nivel = {} {}'.format(tipo_orden, entrada, currency))
                 # 1.7.3 Precio de stoploss
-                sl, pct = entero_o_porcentual('Indique precio de STOPLOSS:')#TODO: no es necesario que sea igual a de entrada
+                sl, pct = entero_o_porcentual('Indique precio de STOPLOSS:')
                 chance_sl = count(1)
-                if pct and direccion_trade=='LONG':
-                    sl = entrada * (1 - sl)
-                elif pct and direccion_trade=='SHORT':
-                    sl = entrada * (1 + sl)
-                elif not sl:#DRY
+                sl = obtener_sl(entrada, sl, pct, direccion_trade)
+                if not sl:
                     print('error en la operativa- el stop loss quedó vacio')
                     while next(chance_sl) < 5:
                         sl, pct = entero_o_porcentual('Indique precio de STOPLOSS:')
-                        if pct and direccion_trade=='LONG':
-                            sl = entrada * (1 - sl)
-                        elif pct and direccion_trade=='SHORT':
-                            sl = entrada * (1 + sl)
-                        elif not sl:
+                        sl = obtener_sl(entrada, sl, pct, direccion_trade)
+                        if not sl:
                             print('error en la operativa- el stop loss quedó vacio')
-                print ('StopLoss = {} {}'.format(sl, currency))
+                #TODO: revisar print# print ('StopLoss = {} {}'.format(sl, currency))
                 target_entradas.append((entrada, sl))
 
                 # 1.7.4 Verificación de la congruencia de la operación
@@ -283,8 +287,7 @@ while True:
         else:
             last_file = file_names[-1]
             i = last_file.split('-')[-1]
-            if i.endswith == '.txt':
-                i = int(i[:-4])
+            i = int(i.split('.')[0])
             file_name = f'{nombre}_{direccion_trade}_{par}_{fecha_actual.strftime("%d_{}").format(nombre_mes)}-{i+1:02d}.txt'
         file_name = os.path.join(path, file_name)
         ## 1.11.4 Exportamos la data en formato .txt
@@ -295,7 +298,7 @@ while True:
             f.write('\n\n\n')
             f.write(console.export_text())
             f.write(hora)
-            f.write('\n   -- Desarrollado por Jackone Action Software Company\n   -- jackone.action.software@gmail.com')
+            # f.write('\n   -- Desarrollado por Jackone Action Software Company\n   -- jackone.action.software@gmail.com')
 
 
         ##  1.12 Ejecutar orden
@@ -304,10 +307,6 @@ while True:
             print ('La cuenta OFFLINE no soporta colocación de órdenes.')
             print ('Volviendo al menu principal')
             continue
-
-
-
-
 
 
 #############################################################################################################
@@ -383,7 +382,7 @@ while True:
                             f.write(str(dict_2_1))
                         path = os.path.join(os.getcwd(), 'cuentas', 'active.pkl')
                         with open(path, 'wb') as f:
-                            cuenta = nombre, dict_2_1
+                            cuenta = [nombre, dict_2_1]
                             pickle.dump(cuenta, f)
                             imprimir_cuenta(nombre, dict_2_1)
                             print('\nPor favor, verifique que la información sea correcta\n')
@@ -431,10 +430,10 @@ while True:
                 pickle.dump([nombre, dict_2_1], f)
             print ('Cuenta {} activada'.format(nombre))
 
-        elif opcion_2 == 'Activar contrato para otros pares':
+        elif opcion_2 == 'Actualizar contratos locales para todos pares':
+            crear_directorio('contratos')
             actualizar_contratos()
-            print ('Próximas actualizaciones')
-            pass
+            print ('Contratos actualizados\n')
 
         elif opcion_2 == 'Volver':
             continue

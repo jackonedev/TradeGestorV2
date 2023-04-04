@@ -87,11 +87,12 @@ def api_request(service, method='GET', query_params=None, header=None, sign=Fals
 
 def actualizar_contratos():
     """Se conecta a la API de BingX y descarga todos los contratos futuros disponibles en el disco local"""
-    contracts = api_request(services['GET_1'], header=True)
+    contracts = api_request(services['GET_1'], header=False)
     data = contracts['data']
     for i in range(len(data)):
         name_asset = contracts['data'][i]['asset']
-        with open(f'contratos/{name_asset}.txt', 'w') as f:
+        path = os.path.join(os.getcwd(), 'contratos', f'{name_asset}.txt')
+        with open(path, 'w') as f:
             f.write(str(data[i]))
 
 

@@ -44,7 +44,8 @@ def imprimir_cuenta(nombre, cuenta):
 def cargar_contrato(par):
     """Se carga desde los contratos guardados localmente"""
     name_contract = list(filter(lambda x: x.startswith(par.upper()), os.listdir('contratos')))[0]
-    with open(f'contratos/{name_contract}', 'r') as f:
+    path = os.path.join(os.getcwd(), 'contratos', name_contract)
+    with open(path, 'r') as f:
         contract = eval(f.read())
     return contract
 
@@ -76,3 +77,16 @@ def generar_rows(n_entradas, estado_entradas, entradas, sls, qty_entradas, price
     qty_entradas = [str(round(elemento, qty_precision))for elemento in qty_entradas]
     riesgo = [str(round(elemento, 1))for elemento in riesgo]
     return id, estado_entradas, entradas, sls, qty_entradas, riesgo
+
+
+def obtener_sl(entrada:float, sl:float, pct:bool, direccion_trade:str) -> float:
+    if pct and direccion_trade=='LONG':
+        sl = entrada * (1 - sl)
+    elif pct and direccion_trade=='SHORT':
+        sl = entrada * (1 + sl)
+    return sl
+
+def crear_directorio(nombre):
+    path = os.path.join(os.getcwd(), nombre)
+    if not os.path.exists(path):
+        os.mkdir(path)

@@ -66,18 +66,21 @@ def ingreso_entero(label):#TODO: Decorators
 
 
 
-def entero_o_porcentual(label):#TODO: si el input termina en . es porcentual -> ejemplo 3. == 3% ; 3.4. = 3.4%
+def entero_o_porcentual(label):
     print (label)
     ingreso = input(">>  ")
     if ingreso.count('%')==1 and ingreso.endswith('%'):
         return float(ingreso.replace('%',''))/100, True
     elif ingreso.isdigit():
-        return int(ingreso), False
+        return float(ingreso), False
+    elif ingreso.endswith('.'):
+        ingreso = ingreso[:-1]
+        return float(ingreso)/100, True
     else:
         try:
             return float(ingreso), False
         except:
-            print(('Ingreso vacio'))#TODO BORRAR
+            print(('Ingreso vacio'))
             return None, None
 
 
