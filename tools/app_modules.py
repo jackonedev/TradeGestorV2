@@ -64,9 +64,11 @@ def apalancamiento(precio_entrada, worst_sl, direccion_trade):
     return apalancamiento, precio_liquidacion
 
 
-def generar_rows(n_entradas, estado_entradas, entradas, sls, qty_entradas, price_precision, qty_precision):
+def generar_rows(n_entradas, estado_entradas, ordenes, entradas, sls, qty_entradas, price_precision, qty_precision):
+    """Devuelve una lista para completar las tabla de resultados, completando los elementos que no fueron calculados"""
     id = [str(i) for i in range(1, n_entradas+1)]
     estado_entradas = ['Calculada' if e else 'Omitida' for e in estado_entradas]
+    ordenes = [orden if orden else '' for orden in ordenes]
     entradas = [entradas[i] if i < len(entradas) else 0.0 for i in range(n_entradas)]
     sls = [sls[i] if i < len(sls) else 0.0 for i in range(n_entradas)]
     qty_entradas = [qty_entradas[i] if i < len(qty_entradas) else 0.0 for i in range(n_entradas)]
@@ -76,7 +78,7 @@ def generar_rows(n_entradas, estado_entradas, entradas, sls, qty_entradas, price
     sls = [str(round(elemento, price_precision))for elemento in sls]
     qty_entradas = [str(round(elemento, qty_precision))for elemento in qty_entradas]
     riesgo = [str(round(elemento, 1))for elemento in riesgo]
-    return id, estado_entradas, entradas, sls, qty_entradas, riesgo
+    return id, estado_entradas, ordenes, entradas, sls, qty_entradas, riesgo
 
 
 def obtener_sl(entrada:float, sl:float, pct:bool, direccion_trade:str) -> float:

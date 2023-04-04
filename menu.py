@@ -203,10 +203,10 @@ while True:
                         if not sl:
                             print('error en la operativa- el stop loss quedó vacio')
                 #TODO: revisar print# print ('StopLoss = {} {}'.format(sl, currency))
-                target_entradas.append((entrada, sl))
+                target_entradas.append((entrada,tipo_orden, sl))
 
                 # 1.7.4 Verificación de la congruencia de la operación
-                for entrada, sl in target_entradas:
+                for entrada, _, sl in target_entradas:
                     if direccion_trade == 'LONG':
                         if entrada <= sl:
                             raise ValueError('En un trade LONG, la entrada no puede ser menor que el StopLoss')
@@ -216,11 +216,12 @@ while True:
 
 
         ##  1.8 Dimensionamiento del trade
+        ordenes = [orden for _, orden, _ in target_entradas]
         ##  1.8.1 Obteniendo entradas y sacando el promedio
-        entradas = [entrada for entrada, _ in target_entradas]
+        entradas = [entrada for entrada, *_ in target_entradas]
         entrada_promedio = np.mean(entradas)
         ## 1.8.2 Obtener el stop-loss más alejado
-        sls = [sl for _, sl in target_entradas]
+        sls = [sl for *_, sl in target_entradas]
         if direccion_trade == 'LONG':
             worst_sl = np.min(sls)
         elif direccion_trade == 'SHORT':
@@ -234,7 +235,7 @@ while True:
             print(f'El apalancamiento máximo para este par es de {max_leverage_s}x\nEl apalancamiento calculado es de {apal_x}x')
             continue
         ## 1.8.4 Obtener la cantidad de monedas a adquirir por entrada
-        qty_entradas = [round(vol_unidad/abs(x[0] - x[1]),qty_precision) for x in target_entradas]
+        qty_entradas = [round(vol_unidad/abs(x[0] - x[-1]),qty_precision) for x in target_entradas]
 
 
         ##  1.9 Descripción del trade
@@ -255,14 +256,15 @@ while True:
     
         table.add_column("Nº", justify="right", style="cyan", no_wrap=True)
         table.add_column("CONDICION", style="cyan")
+        table.add_column("ORDEN", style="cyan")
         table.add_column("ENTRADA", justify="right", style="cyan")
         table.add_column("STOPLOSS", justify="right", style="cyan")
         table.add_column("CANTIDAD", justify="right", style="cyan")
         table.add_column("RIESGO", justify="right", style="cyan")
 
-        row_1, row_2, row_3, row_4, row_5, row_6 = generar_rows(n_entradas, estado_entradas, entradas, sls, qty_entradas, price_precision, qty_precision)
+        id_1, estado_2, orden_3, entrada_4, sl_5, cantidad_6, riesgo_7 = generar_rows(n_entradas, estado_entradas,ordenes, entradas, sls, qty_entradas, price_precision, qty_precision)
         for i in range(n_entradas):
-            table.add_row(row_1[i], row_2[i], row_3[i], row_4[i], row_5[i], row_6[i])
+            table.add_row(id_1[i], estado_2[i], orden_3[i], entrada_4[i], sl_5[i], cantidad_6[i], riesgo_7[i])
         console.print(table)
 
         ##  1.10 Confirmar trade
@@ -300,6 +302,7 @@ while True:
             f.write(hora)
             # f.write('\n   -- Desarrollado por Jackone Action Software Company\n   -- jackone.action.software@gmail.com')
 
+        print ('Trade registrado bajo el nombre: {}'.format(file_name))
 
         ##  1.12 Ejecutar orden
         ## 1.12.1 Comprobar cuenta ONLINE
@@ -307,7 +310,7 @@ while True:
             print ('La cuenta OFFLINE no soporta colocación de órdenes.')
             print ('Volviendo al menu principal')
             continue
-
+        print ('Todavía en desarrollo, muchas gracias por utilizar TradeGestorDEMO versión ONLINE')
 
 #############################################################################################################
 #############################################################################################################
