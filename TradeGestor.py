@@ -10,8 +10,9 @@ from datetime import datetime
 from rich.console import Console
 from rich.table import Table
 import codecs
+import locale
 
-
+locale.setlocale(locale.LC_TIME, "es_ES.UTF-8")
 
 print ('''
     ============================================================
@@ -81,6 +82,9 @@ while True:
             if not isinstance(cuenta, list) and len(cuenta)==2:
                 print('La cuenta activa no tiene el formato correcto')
                 continue
+            elif cuenta == '--.. .- .-. - . -..- .--. .-. ---':
+                print('Bienvenido a TradeGestorDEMO\nPor favor dirijase a la parte de configuración de cuenta')
+                continue
 
         ##  DESEMPAQUE Y CREACION DE VARIABLES LOCALES
         nombre, dict_cta = tuple(cuenta)
@@ -111,11 +115,15 @@ while True:
         print ('Seleccione par a operar:')
         par = ingreso_bool_personalizado('BTC', 'XRP')
         if not par:
-            print ('Fallo la operativa')
+            print ('Por favor vaya a configuración y seleccione Descargar contratos')
+            print ('Falló la operativa')
             continue
 
         ##  1.2 Búsqueda de contrato, y obtención de cifras significativas
         contract = cargar_contrato(par)
+        if not contract:
+            print ('Falló la operativa')
+            continue
         par = contract['asset']
         currency = contract['currency']
         symbol = contract['symbol']
@@ -150,10 +158,10 @@ while True:
 
 
         ## 1.5 Diversificación de la posición (I)
-        print ('Indique cuales entradas desea colocar:')
+        print ('Indique cuales ENTRADAS desea colocar:')
         estado_entradas = []
         for i in range(n_entradas):
-            estado_entradas.append(ingreso_bool(f'Colocar entrada {i+1}?'))
+            estado_entradas.append(ingreso_bool(f'Colocar ENTRADA Nº {i+1}?'))
         print (f'Entradas COLOCADAS: {sum(estado_entradas)}  |  Entradas ANULADAS: {len(estado_entradas)-sum(estado_entradas)}')
         
         
@@ -353,7 +361,7 @@ while True:
             print('No existe información de la cuenta offline.\n')
 
 
-        opciones = ['Configuración cuenta', 'Seleccionar cuenta', 'Activar contrato para otros pares', 'Volver']        
+        opciones = ['Configuración cuenta', 'Seleccionar cuenta', 'Descarga de contratos', 'Volver']        
         opcion_2 = activate_options(opciones)
 
         if opcion_2 == 'Configuración cuenta':
@@ -371,8 +379,9 @@ while True:
                     print ('se verifican datos previos...\n')
                     for key, value in dict_2_1.items():
                         print ('{}: {}'.format(key, value))
+                        print ()
                 except:
-                    print ('no se verifican datos previos')
+                    print ('no se verifican datos previos\n')
                     dict_2_1 = {'vol_cta': 0, 'riesgo_op': 0.0, 'n_entradas': 0, 'vol_op': 0.0, 'vol_unidad': 0.0}
 
             opciones = ['Volumen Cuenta', 'Riesgo por operación', 'Cantidad de entradas por posición', 'Volver']
@@ -427,13 +436,17 @@ while True:
 
             path = os.path.join(os.getcwd(), 'cuentas', '{}.txt'.format(nombre.lower()))
             with open(path, 'r') as f:
-                dict_2_1 = eval(f.read())
+                try:
+                    dict_2_1 = eval(f.read())
+                except:
+                    print ('No se encontró información de la cuenta {}\n'.format(nombre))
+                    continue
             path = os.path.join(os.getcwd(), 'cuentas', 'active.pkl')
             with open(path, 'wb') as f:
                 pickle.dump([nombre, dict_2_1], f)
             print ('Cuenta {} activada'.format(nombre))
 
-        elif opcion_2 == 'Actualizar contratos locales para todos pares':
+        elif opcion_2 == 'Descarga de contratos':
             crear_directorio('contratos')
             actualizar_contratos()
             print ('Contratos actualizados\n')

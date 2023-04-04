@@ -7,6 +7,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 
+
 def productoria(lista):
     return reduce(lambda x, y: x*y, lista)
 
@@ -43,7 +44,14 @@ def imprimir_cuenta(nombre, cuenta):
 
 def cargar_contrato(par):
     """Se carga desde los contratos guardados localmente"""
-    name_contract = list(filter(lambda x: x.startswith(par.upper()), os.listdir('contratos')))[0]
+    path = os.path.join(os.getcwd(), 'contratos')
+    if not os.path.exists(path):
+        os.mkdir(path)
+    name_contract = list(filter(lambda x: x.startswith(par.upper()), os.listdir('contratos')))
+    if len(name_contract) == 0:
+        print ('No existen contratos almacenados en el directorio')
+        return
+    name_contract = name_contract[0]
     path = os.path.join(os.getcwd(), 'contratos', name_contract)
     with open(path, 'r') as f:
         contract = eval(f.read())

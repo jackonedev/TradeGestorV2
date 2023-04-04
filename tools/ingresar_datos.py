@@ -80,7 +80,7 @@ def entero_o_porcentual(label):
         try:
             return float(ingreso), False
         except:
-            print(('Ingreso vacio'))
+            print()
             return None, None
 
 
@@ -135,7 +135,6 @@ def ingresar_tasa():
         print( 'return')
         return
     if ingreso.count('%') == 1 and ingreso.endswith('%'):
-        print('%')
         ingreso = ingreso.replace('%','')
         if ingreso.isdigit():
             ingreso = float(ingreso)
