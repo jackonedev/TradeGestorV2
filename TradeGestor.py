@@ -114,7 +114,8 @@ while True:
         ## 1.1 Selección del par a operar
         print ('Seleccione par a operar:')
         par = ingreso_bool_personalizado('BTC', 'XRP')
-        if not par:
+        path = os.path.join(os.getcwd(), 'contratos')
+        if not os.path.exists(path):
             print ('Por favor vaya a configuración y seleccione Descargar contratos')
             print ('Falló la operativa')
             continue
@@ -122,6 +123,7 @@ while True:
         ##  1.2 Búsqueda de contrato, y obtención de cifras significativas
         contract = cargar_contrato(par)
         if not contract:
+            print ('No se encontró el contrato')
             print ('Falló la operativa')
             continue
         par = contract['asset']

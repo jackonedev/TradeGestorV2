@@ -1,0 +1,1 @@
+{'contractId': '100', 'symbol': 'BTC-USDT', 'size': '0.0001', 'quantityPrecision': 4, 'pricePrecision': 1, 'feeRate': 0.0005, 'tradeMinLimit': 1, 'maxLongLeverage': 150, 'maxShortLeverage': 150, 'currency': 'USDT', 'asset': 'BTC', 'status': 1}
