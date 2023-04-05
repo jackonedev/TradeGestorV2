@@ -1,1 +1,0 @@
-pyinstaller --onefile --icon=Zicon.ico  TradeGestor.py

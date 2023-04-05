@@ -6,6 +6,7 @@ registro/
 contratos/*
 cuentas/
 *posicion.txt
+comandopyinstaler*
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
