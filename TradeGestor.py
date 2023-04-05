@@ -238,6 +238,10 @@ while True:
             worst_sl = np.max(sls)
         ## 1.8.3 Obtener el apalancamiento máximo
         apal_x, precio_liq = apalancamiento(entrada_promedio, worst_sl, direccion_trade)
+
+
+
+        ###TODO: APALANCAMIENTO -> SI ES MAYOR AL MAXIMO ADMITIDO CONFIGURAR UNA NUEVA ALTERNATIVA DE RESOLUCION
         if direccion_trade == 'LONG' and apal_x > max_leverage_l:
             print(f'El apalancamiento máximo para este par es de {max_leverage_l}x\nEl apalancamiento calculado es de {apal_x}x')
             continue
