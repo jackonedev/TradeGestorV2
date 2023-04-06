@@ -276,6 +276,8 @@ while True:
         table.add_column("CANTIDAD", justify="right", style="cyan")
         table.add_column("RIESGO", justify="right", style="cyan")
 
+
+        #TODO: actualizar RIESGO
         id_1, estado_2, orden_3, entrada_4, sl_5, cantidad_6, riesgo_7 = generar_rows(n_entradas, estado_entradas,ordenes, entradas, sls, qty_entradas, price_precision, qty_precision)
         for i in range(n_entradas):
             table.add_row(id_1[i], estado_2[i], orden_3[i], entrada_4[i], sl_5[i], cantidad_6[i], riesgo_7[i])
