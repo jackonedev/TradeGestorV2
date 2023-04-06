@@ -213,7 +213,7 @@ while True:
                         if not sl:
                             print('error en la operativa- el stop loss quedó vacio')
                 #TODO: revisar print# print ('StopLoss = {} {}'.format(sl, currency))
-                target_entradas.append((entrada,tipo_orden, sl))
+                target_entradas.append((entrada, tipo_orden, sl))
 
                 # 1.7.4 Verificación de la congruencia de la operación
                 for entrada, _, sl in target_entradas:
@@ -244,10 +244,21 @@ while True:
         ###TODO: APALANCAMIENTO -> SI ES MAYOR AL MAXIMO ADMITIDO CONFIGURAR UNA NUEVA ALTERNATIVA DE RESOLUCION
         if direccion_trade == 'LONG' and apal_x > max_leverage_l:
             print(f'El apalancamiento máximo para este par es de {max_leverage_l}x\nEl apalancamiento calculado es de {apal_x}x')
-            continue
+            print ('Desea apalancarse al máximo y utilizar un margen mayor de su cuenta?')
+            continuar = ingreso_bool('Continuar?')
+            if not continuar:
+                continue
+            else:
+                apal_x = max_leverage_l
         if direccion_trade == 'SHORT' and apal_x > max_leverage_s:
             print(f'El apalancamiento máximo para este par es de {max_leverage_s}x\nEl apalancamiento calculado es de {apal_x}x')
-            continue
+            print ('Desea apalancarse al máximo y utilizar un margen mayor de su cuenta?')
+            continuar = ingreso_bool('Continuar?')
+            if not continuar:
+                continue
+            else:
+                apal_x = max_leverage_s
+                
         ## 1.8.4 Obtener la cantidad de monedas a adquirir por entrada
         qty_entradas = [round(vol_unidad/abs(x[0] - x[-1]),qty_precision) for x in target_entradas]
 
