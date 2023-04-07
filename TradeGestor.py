@@ -132,8 +132,8 @@ while True:
         symbol = contract['symbol']
         qty_precision = contract['quantityPrecision']
         price_precision = contract['pricePrecision']
-        max_leverage_l = contract['maxLongLeverage']
-        max_leverage_s = contract['maxShortLeverage']
+        max_leverage_l = int(contract['maxLongLeverage'])
+        max_leverage_s = int(contract['maxShortLeverage'])
 
 
         ##  1.3 Dirección del trade
@@ -197,11 +197,11 @@ while True:
                     elif pct and direccion_trade=='SHORT':
                         entrada = benchmark *(1+entrada)
                     elif not entrada:
+                        tipo_orden = "LIMIT-MARKET"
                         entrada = benchmark
                 else:
                     print ('Falló la operativa')
                     continue
-                #TODO: revisar print# print ('Orden {} en el nivel = {} {}'.format(tipo_orden, entrada, currency))
                 # 1.7.3 Precio de stoploss
                 sl, pct = entero_o_porcentual('Indique precio de STOPLOSS:')
                 chance_sl = count(1)
@@ -216,7 +216,6 @@ while True:
 
                 porcentaje_sl = round(abs(entrada - sl) / entrada * 100, 2)
                 alerta(titulo=f'Orden {tipo_orden}', mensaje= f'Precio Entrada = {entrada} {currency}\nStopLoss = {sl} {currency}\nPorcentaje SL = {porcentaje_sl} %')
-                #TODO: revisar print# print ('StopLoss = {} {}'.format(sl, currency))
                 target_entradas.append((entrada, tipo_orden, porcentaje_sl, sl))
 
                 # 1.7.4 Verificación de la congruencia de la operación
@@ -260,8 +259,10 @@ while True:
                 continue
             else:
                 apal_x = max_leverage_s
+                precio_liquidacion = precio_liquidacion(apal_x, entrada_promedio, direccion_trade)
         ## 1.8.5 Obtener la cantidad de monedas a adquirir por entrada
-        qty_entradas = [round(vol_unidad/abs(x[0] - x[-1]),qty_precision) for x in target_entradas]
+        qty_entradas = [round(vol_unidad/abs(x[0] - x[-1]),qty_precision) for x in target_entradas]        
+        ##TODO: Formula para limitar el riesgo cuando uno se apalanca al máximo -> probablemente de igual a la anterior# qty_entradas = [round(vol_unidad*apal_x/x[0], qty_precision) for x in target_entradas]
 
 
         ##  1.9 Descripción del trade
@@ -272,7 +273,7 @@ while True:
         - StopLoss más alejado = {round(worst_sl, price_precision)}
         - Apalancamiento = {apal_x}
         - Precio de liquidación = {round(precio_liq, price_precision)}
-        - Total comerciado = {sum([round(qty_e, qty_precision) for qty_e in qty_entradas])}
+        - Total comerciado = {round(sum([round(qty_e, qty_precision) for qty_e in qty_entradas]), qty_precision)}
         - Pérdidas peor escenario = {round(sum([abs(entradas[i] - sls[i])*qty_entradas[i] for i in range(sum(estado_entradas))]), 2)}
         """
         print (export_data_trade)
@@ -310,16 +311,18 @@ while True:
         hora = '\n\n\nTrade calculado el día {} a las {}'.format(fecha_actual.strftime("%d de {mes} de %Y").format(mes=nombre_mes.title()), fecha_actual.strftime("%H:%M:%S"))
         ## 1.11.3 Verificamos los nombre existentes y definimos nombre
         file_names = os.listdir(path=path)
+        print(file_names)
         if len(file_names) == 0:
+            i = 1
             file_name = f'{nombre}_{direccion_trade}_{par}_{fecha_actual.strftime("%d_{}").format(nombre_mes)}-01.txt'
         else:
             last_file = file_names[-1]
             i = last_file.split('-')[-1]
             i = int(i.split('.')[0])
             file_name = f'{nombre}_{direccion_trade}_{par}_{fecha_actual.strftime("%d_{}").format(nombre_mes)}-{i+1:02d}.txt'
-        file_name = os.path.join(path, file_name)
+        file_path = os.path.join(path, file_name)
         ## 1.11.4 Exportamos la data en formato .txt
-        with codecs.open(file_name, 'w', encoding='utf-8') as f:
+        with codecs.open(file_path, 'w', encoding='utf-8') as f:
             f.write('TradeGestorDEMO: v2 \nCalculadora de riesgo y gestor de posiciones\nExchange: BingX\n')
             f.write(export_data_inicial)
             f.write(export_data_trade)
@@ -329,16 +332,28 @@ while True:
             # f.write('\n   -- Desarrollado por Jackone Action Software Company\n   -- jackone.action.software@gmail.com')
         print ('Trade registrado bajo el nombre: {}'.format(file_name))
 
-        ##  1.12 Ejecutar orden
+        ##  1.12 Exportar orden
         orden = {}
         ## 1.12.1 Comprobar cuenta ONLINE
         if nombre == 'OFFLINE':
             print ('La cuenta OFFLINE no soporta colocación de órdenes.')
             print ('Volviendo al menu principal')
             continue
-        print ('Todavía en desarrollo, muchas gracias por utilizar TradeGestorDEMO versión ONLINE')
-        ###TODO: if tipo_orden == 'LIMIT' and entrada=benchmark:
-        ############ recalcular orden LIMIT como si fuera MARKET
+        path = os.path.join(os.getcwd(), 'ordenes')
+        os.makedirs(path, exist_ok=True)
+        file_names = os.listdir(path=path)
+        file_name = f'{i+1:02d}_{direccion_trade}_{par}_{fecha_actual.strftime("%d_{}").format(nombre_mes)}.txt'
+        file_path = os.path.join(path, file_name)
+        with open(file_path, 'w') as f:
+            f.write(direccion_trade)
+            f.write('\n')
+            f.write(str(contract))
+            f.write('\n')
+            f.write(str(target_entradas))
+            f.write('\n')
+            f.write(str(apal_x))
+        print('orden exportada en: {}'.format(file_name))
+        
 
 
 
