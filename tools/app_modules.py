@@ -76,9 +76,9 @@ def precio_liquidacion(apalancamiento, precio_entrada, direccion_trade):
     Obtener precio de liquidación en función de un apalancamiento dado
     """
     if direccion_trade == 'LONG':
-        precio_liquidacion = precio_entrada *(1 - 1/apalancamiento)
+        precio_liquidacion = precio_entrada *(1 - 1/float(apalancamiento))
     elif direccion_trade == 'SHORT':
-        precio_liquidacion = precio_entrada *(1 + 1/apalancamiento)
+        precio_liquidacion = precio_entrada *(1 + 1/float(apalancamiento))
     return precio_liquidacion
 
 
@@ -86,7 +86,7 @@ def generar_rows(n_entradas, estado_entradas, ordenes, entradas, sls, qty_entrad
     """Devuelve una lista para completar las tabla de resultados, completando los elementos que no fueron calculados"""
     id = [str(i) for i in range(1, n_entradas+1)]
     estado_entradas = ['Calculada' if e else 'Omitida' for e in estado_entradas]
-    ordenes = [orden if orden else '' for orden in ordenes]
+    ordenes = [ordenes[i] if i<len(ordenes) else '' for i in range(n_entradas)]
     entradas = [entradas[i] if i < len(entradas) else 0.0 for i in range(n_entradas)]
     sls = [sls[i] if i < len(sls) else 0.0 for i in range(n_entradas)]
     qty_entradas = [qty_entradas[i] if i < len(qty_entradas) else 0.0 for i in range(n_entradas)]
