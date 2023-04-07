@@ -352,6 +352,8 @@ while True:
             f.write(str(target_entradas))
             f.write('\n')
             f.write(str(apal_x))
+            f.write('\n')
+            f.write(str(qty_entradas))
         print('orden exportada en: {}'.format(file_name))
         
 
