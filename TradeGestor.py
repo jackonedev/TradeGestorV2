@@ -1,7 +1,7 @@
 import numpy as np
 from tools.ingresar_datos import ingreso_bool_personalizado, ingresar_tasa, ingreso_entero, ingreso_bool, entero_o_porcentual
 from tools.api_bingx import actualizar_contratos, get_account_balance, get_price
-from tools.app_modules import comprobar_apis, imprimir_cuenta, cargar_contrato, apalancamiento, generar_rows, obtener_sl, crear_directorio
+from tools.app_modules import comprobar_apis, imprimir_cuenta, cargar_contrato, apalancamiento, precio_liquidacion, generar_rows, obtener_sl, crear_directorio, alerta
 online = comprobar_apis()
 import os
 import pickle
@@ -27,6 +27,7 @@ CUENTAS = ['online.txt', 'offline.txt', 'active.pkl']
 ## create path
 path = os.path.join(os.getcwd(), 'cuentas')
 if not os.path.exists(path):
+    alerta(titulo='BIENVENDIO A TRADE GESTOR', mensaje='Por favor dirijase a la parte de configuración y configure su cuenta')
     os.mkdir(path)
 ## create files for each CUENTAS
 for i, cuenta in enumerate(CUENTAS):
@@ -212,11 +213,14 @@ while True:
                         sl = obtener_sl(entrada, sl, pct, direccion_trade)
                         if not sl:
                             print('error en la operativa- el stop loss quedó vacio')
+
+                porcentaje_sl = round(abs(entrada - sl) / entrada * 100, 2)
+                alerta(titulo=f'Orden {tipo_orden}', mensaje= f'Precio Entrada = {entrada} {currency}\nStopLoss = {sl} {currency}\nPorcentaje SL = {porcentaje_sl} %')
                 #TODO: revisar print# print ('StopLoss = {} {}'.format(sl, currency))
-                target_entradas.append((entrada, tipo_orden, sl))
+                target_entradas.append((entrada, tipo_orden, porcentaje_sl, sl))
 
                 # 1.7.4 Verificación de la congruencia de la operación
-                for entrada, _, sl in target_entradas:
+                for entrada, *_, sl in target_entradas:
                     if direccion_trade == 'LONG':
                         if entrada <= sl:
                             raise ValueError('En un trade LONG, la entrada no puede ser menor que el StopLoss')
@@ -226,7 +230,7 @@ while True:
 
 
         ##  1.8 Dimensionamiento del trade
-        ordenes = [orden for _, orden, _ in target_entradas]
+        ordenes = [orden for _, orden, *_ in target_entradas]
         ##  1.8.1 Obteniendo entradas y sacando el promedio
         entradas = [entrada for entrada, *_ in target_entradas]
         entrada_promedio = np.mean(entradas)
@@ -247,6 +251,7 @@ while True:
                 continue
             else:
                 apal_x = max_leverage_l
+                precio_liquidacion = precio_liquidacion(apal_x, entrada_promedio, direccion_trade)
         if direccion_trade == 'SHORT' and apal_x > max_leverage_s:
             print(f'El apalancamiento máximo para este par es de {max_leverage_s}x\nEl apalancamiento calculado es de {apal_x}x')
             print ('Desea apalancarse al máximo y utilizar un margen mayor de su cuenta?')
@@ -271,10 +276,10 @@ while True:
         - Pérdidas peor escenario = {round(sum([abs(entradas[i] - sls[i])*qty_entradas[i] for i in range(sum(estado_entradas))]), 2)}
         """
         print (export_data_trade)
-
+        
         console = Console(record=True)
         table = Table(title="RESUMEN ENTRADAS: {} | PAR: {}".format(direccion_trade, par))
-    
+        
         table.add_column("Nº", justify="right", style="cyan", no_wrap=True)
         table.add_column("CONDICION", style="cyan")
         table.add_column("ORDEN", style="cyan")
@@ -299,12 +304,10 @@ while True:
         ##  1.11.1 Creamos el directorio "registro"
         path = os.path.join(os.getcwd(), 'registro')
         os.makedirs(path, exist_ok=True)
-
         ##  1.11.2 Obtenemos datos del fecha y hora actual
         fecha_actual = datetime.now()
         nombre_mes = fecha_actual.strftime("%B")
         hora = '\n\n\nTrade calculado el día {} a las {}'.format(fecha_actual.strftime("%d de {mes} de %Y").format(mes=nombre_mes.title()), fecha_actual.strftime("%H:%M:%S"))
-
         ## 1.11.3 Verificamos los nombre existentes y definimos nombre
         file_names = os.listdir(path=path)
         if len(file_names) == 0:
@@ -324,7 +327,6 @@ while True:
             f.write(console.export_text())
             f.write(hora)
             # f.write('\n   -- Desarrollado por Jackone Action Software Company\n   -- jackone.action.software@gmail.com')
-
         print ('Trade registrado bajo el nombre: {}'.format(file_name))
 
         ##  1.12 Ejecutar orden
@@ -335,6 +337,12 @@ while True:
             print ('Volviendo al menu principal')
             continue
         print ('Todavía en desarrollo, muchas gracias por utilizar TradeGestorDEMO versión ONLINE')
+        ###TODO: if tipo_orden == 'LIMIT' and entrada=benchmark:
+        ############ recalcular orden LIMIT como si fuera MARKET
+
+
+
+
 
 #############################################################################################################
 #############################################################################################################
@@ -395,7 +403,7 @@ while True:
                     print ('se verifican datos previos...\n')
                     for key, value in dict_2_1.items():
                         print ('{}: {}'.format(key, value))
-                        print ()
+                    print ()
                 except:
                     print ('no se verifican datos previos\n')
                     dict_2_1 = {'vol_cta': 0, 'riesgo_op': 0.0, 'n_entradas': 0, 'vol_op': 0.0, 'vol_unidad': 0.0}
