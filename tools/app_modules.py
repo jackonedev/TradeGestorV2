@@ -1,7 +1,7 @@
 from functools import reduce
 import os
 from dotenv import load_dotenv
-
+from plyer import notification
 
 
 load_dotenv()
@@ -100,3 +100,13 @@ def crear_directorio(nombre):
     path = os.path.join(os.getcwd(), nombre)
     if not os.path.exists(path):
         os.mkdir(path)
+
+
+def alerta(titulo, mensaje):
+    notification.notify(
+        title = titulo,
+        message = mensaje,
+        app_icon = None,
+        timeout = 5,
+        toast = False
+    )

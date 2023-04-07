@@ -1,5 +1,5 @@
-jupyter
 pandas
 requests
 python-dotenv
 rich
+plyer

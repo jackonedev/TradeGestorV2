@@ -238,10 +238,7 @@ while True:
             worst_sl = np.max(sls)
         ## 1.8.3 Obtener el apalancamiento máximo
         apal_x, precio_liq = apalancamiento(entrada_promedio, worst_sl, direccion_trade)
-
-
-
-        ###TODO: APALANCAMIENTO -> SI ES MAYOR AL MAXIMO ADMITIDO CONFIGURAR UNA NUEVA ALTERNATIVA DE RESOLUCION
+        # 1.8.4 Verificación del estar dentro de los límites aceptables
         if direccion_trade == 'LONG' and apal_x > max_leverage_l:
             print(f'El apalancamiento máximo para este par es de {max_leverage_l}x\nEl apalancamiento calculado es de {apal_x}x')
             print ('Desea apalancarse al máximo y utilizar un margen mayor de su cuenta?')
@@ -258,8 +255,7 @@ while True:
                 continue
             else:
                 apal_x = max_leverage_s
-                
-        ## 1.8.4 Obtener la cantidad de monedas a adquirir por entrada
+        ## 1.8.5 Obtener la cantidad de monedas a adquirir por entrada
         qty_entradas = [round(vol_unidad/abs(x[0] - x[-1]),qty_precision) for x in target_entradas]
 
 
@@ -288,7 +284,7 @@ while True:
         table.add_column("RIESGO", justify="right", style="cyan")
 
 
-        #TODO: actualizar RIESGO
+        # 1.9.1 Generar filas de la tabla
         id_1, estado_2, orden_3, entrada_4, sl_5, cantidad_6, riesgo_7 = generar_rows(n_entradas, estado_entradas,ordenes, entradas, sls, qty_entradas, price_precision, qty_precision)
         for i in range(n_entradas):
             table.add_row(id_1[i], estado_2[i], orden_3[i], entrada_4[i], sl_5[i], cantidad_6[i], riesgo_7[i])
@@ -332,6 +328,7 @@ while True:
         print ('Trade registrado bajo el nombre: {}'.format(file_name))
 
         ##  1.12 Ejecutar orden
+        orden = {}
         ## 1.12.1 Comprobar cuenta ONLINE
         if nombre == 'OFFLINE':
             print ('La cuenta OFFLINE no soporta colocación de órdenes.')
