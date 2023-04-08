@@ -109,6 +109,7 @@ def create_options_dict(opciones: list) -> dict:
 
 
 def activate_options(opciones: list) -> str:
+        """Funcion para crear menu de opciones. Se debe conocer todas las opciones de antemano y no admite valor por default"""
         print('\t\t\t>>  Opciones  <<\n')
         opciones_display = create_options_display(opciones)
         opciones_dict = create_options_dict(opciones)

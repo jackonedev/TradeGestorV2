@@ -2,6 +2,7 @@ from functools import reduce
 import os
 from dotenv import load_dotenv
 from plyer import notification
+import pandas as pd
 
 
 load_dotenv()
@@ -120,3 +121,40 @@ def alerta(titulo, mensaje):
         timeout = 5,
         toast = False
     )
+
+
+def ultimas_ordenes(path='ordenes', ultimas=5):
+    files = os.listdir(path)
+    print ('ULTIMAS ORDENES:')
+    posible_files = []
+    for file in files:
+        if not file.split('_')[0].isdigit():
+            continue
+        posible_files.append(file)
+    for file in posible_files[-ultimas:]:
+        print (file)
+    print ('SELECCIONA el número de orden que quieres operar: default={}'.format(pd.Series(posible_files).max()))
+    return posible_files
+
+
+def seleccionar_orden(posible_files):
+    ingreso = input('>> ')
+    if ingreso == '':
+        return pd.Series([int(num.split('_')[0]) for num in posible_files]).max()
+    elif ingreso.isdigit():
+        if ingreso[0] == '0':
+            ingreso=ingreso[1:]
+        if int(ingreso) > len(posible_files):
+            print ('error')
+            return seleccionar_orden(posible_files)
+        return int(ingreso)
+    else:
+        print ('error')
+        exit()
+
+def buscar_orden(num_orden, posible_files):
+    for file in posible_files:
+        if int(file.split('_')[0]) == num_orden:
+            return file
+    print ('error')
+    exit()

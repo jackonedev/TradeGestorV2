@@ -311,15 +311,14 @@ while True:
         hora = '\n\n\nTrade calculado el día {} a las {}'.format(fecha_actual.strftime("%d de {mes} de %Y").format(mes=nombre_mes.title()), fecha_actual.strftime("%H:%M:%S"))
         ## 1.11.3 Verificamos los nombre existentes y definimos nombre
         file_names = os.listdir(path=path)
-        print(file_names)
         if len(file_names) == 0:
             i = 1
             file_name = f'{nombre}_{direccion_trade}_{par}_{fecha_actual.strftime("%d_{}").format(nombre_mes)}-01.txt'
         else:
             last_file = file_names[-1]
             i = last_file.split('-')[-1]
-            i = int(i.split('.')[0])
-            file_name = f'{nombre}_{direccion_trade}_{par}_{fecha_actual.strftime("%d_{}").format(nombre_mes)}-{i+1:02d}.txt'
+            i = int(i.split('.')[0]) +1
+            file_name = f'{nombre}_{direccion_trade}_{par}_{fecha_actual.strftime("%d_{}").format(nombre_mes)}-{i:02d}.txt'
         file_path = os.path.join(path, file_name)
         ## 1.11.4 Exportamos la data en formato .txt
         with codecs.open(file_path, 'w', encoding='utf-8') as f:
@@ -333,7 +332,6 @@ while True:
         print ('Trade registrado bajo el nombre: {}'.format(file_name))
 
         ##  1.12 Exportar orden
-        orden = {}
         ## 1.12.1 Comprobar cuenta ONLINE
         if nombre == 'OFFLINE':
             print ('La cuenta OFFLINE no soporta colocación de órdenes.')
@@ -342,7 +340,7 @@ while True:
         path = os.path.join(os.getcwd(), 'ordenes')
         os.makedirs(path, exist_ok=True)
         file_names = os.listdir(path=path)
-        file_name = f'{i+1:02d}_{direccion_trade}_{par}_{fecha_actual.strftime("%d_{}").format(nombre_mes)}.txt'
+        file_name = f'{i:02d}_{direccion_trade}_{par}_{fecha_actual.strftime("%d_{}").format(nombre_mes)}.txt'
         file_path = os.path.join(path, file_name)
         with open(file_path, 'w') as f:
             f.write(direccion_trade)

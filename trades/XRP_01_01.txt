@@ -1,0 +1,31 @@
+{
+symbol:'XRP-USDT',
+side:'SHORT',
+leverage:100,
+timestamp:timestamp
+}
+
+par = 'XRP'
+price =  price(par)
+sl = stoploss(price, target_entrada[0][2], dirección)
+
+
+## ENTRADA 1
+{
+symbol:'XRP-USDT',
+type: 'LIMIT'
+side: 'SELL'
+positionSide: 'SHORT'
+price: price
+quantity: 1404.0
+timestamp = timestamp
+}
+## STOPLOSS 1
+{
+symbol:'XRP-USDT',
+type: 'TRIGGER_MARKET'
+side: 'BUY'
+positionSide: 'SHORT'
+price: sl
+quantity: 1404.0
+}#TRIGGER_MARKET no necesita stopPrice

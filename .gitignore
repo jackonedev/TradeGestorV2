@@ -9,6 +9,7 @@ ordenes/
 cuentas/
 *posicion.txt
 comandopyinstaler*
+indicadores/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
