@@ -329,7 +329,7 @@ while True:
             f.write(console.export_text())
             f.write(hora)
             # f.write('\n   -- Desarrollado por Jackone Action Software Company\n   -- jackone.action.software@gmail.com')
-        print ('Trade registrado bajo el nombre: {}'.format(file_name))
+        print ('\n- Trade registrado bajo el nombre: {}'.format(file_name))
 
         ##  1.12 Exportar orden
         ## 1.12.1 Comprobar cuenta ONLINE
@@ -352,7 +352,7 @@ while True:
             f.write(str(apal_x))
             f.write('\n')
             f.write(str(qty_entradas))
-        print('orden exportada en: {}'.format(file_name))
+        print('- Orden exportada en: {}\n'.format(file_name))
         
 
 

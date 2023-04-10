@@ -26,9 +26,10 @@ BINGX_ERRORS = {
     80017: "position does not exist"
 }
 
-services = {'GET_1':'/openApi/swap/v2/quote/contracts',
-            'GET_2':'/openApi/swap/v2/user/balance',
-            'GET_3':'/openApi/swap/v2/quote/price',
+services = {'GET_1': '/openApi/swap/v2/quote/contracts',
+            'GET_2': '/openApi/swap/v2/user/balance',
+            'GET_3': '/openApi/swap/v2/quote/price',
+            'POST_1': '/openApi/swap/v2/trade/leverage'
 }
 
 
@@ -41,47 +42,47 @@ def generate_signature(secret_key, query_params):
         ).hexdigest()
     return signature
 
-def api_request(service, method='GET', query_params=None, header=None, sign=False):
+def api_request(service, method='GET', query_params=None, header=False, sign=False):
     """docstring"""
-    ROOT_URL = URL
-    url = f'{ROOT_URL}{service}'
+    url = f'{URL}{service}'
     headers = {
         'Content-Type': 'application/json'
     }
-
     if header:
         headers.update({'X-BX-APIKEY': API_KEY})
+    print (f'headers -->  {headers}')
 
     timestamp = int(time.time() *1000)
     params = f'timestamp={timestamp}'
     if query_params:
         params += f'&{query_params}'
 
-
-
     if sign:
+        print (f'params -->  {params}')
         signature = generate_signature(SECRET_KEY, params)
         params += f'&signature={signature}'
-    
-
 
     url += f'?{params}'
+    print (f'url  -->  {url}')
     if method == 'GET':
         response = requests.get(url, headers=headers)
     else:
+        print ('enviando un post method')
         response = requests.post(url, headers=headers)
 
     if response.status_code != 200:
+        print ('SALIDA 1')
         print (f'status_code: {response.status_code}')
         print (f'message: {response.text}')
         raise HTTPException()
 
     response = response.json()
     if 'success' in response and not response.get('success'):
+        print ('SALIDA 2')
         print ('status_code=400')
         print (f'detail={BINGX_ERRORS.get(response.get("code"))}')
         raise HTTPException()
-
+    print ('SALIDA 3')
     return response
 
 
