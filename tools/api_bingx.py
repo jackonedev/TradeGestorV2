@@ -71,18 +71,15 @@ def api_request(service, method='GET', query_params=None, header=False, sign=Fal
         response = requests.post(url, headers=headers)
 
     if response.status_code != 200:
-        print ('SALIDA 1')
         print (f'status_code: {response.status_code}')
         print (f'message: {response.text}')
         raise HTTPException()
 
     response = response.json()
     if 'success' in response and not response.get('success'):
-        print ('SALIDA 2')
         print ('status_code=400')
         print (f'detail={BINGX_ERRORS.get(response.get("code"))}')
         raise HTTPException()
-    print ('SALIDA 3')
     return response
 
 

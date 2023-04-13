@@ -4,6 +4,7 @@ import requests
 import time
 import hmac
 from hashlib import sha256
+from http.client import HTTPException
 
 load_dotenv()
 
@@ -17,6 +18,7 @@ except KeyError:
 
 URL = 'https://open-api.bingx.com'
 
+##TODO: No recuerdo si está estipulado para que retorne el error por si algo no llegar a funcionar
 BINGX_ERRORS = {
     100001: "signature verification failed",
     100500: "Internal system error",
@@ -88,15 +90,25 @@ def send_request(methed, path, urlpa, payload):
         'X-BX-APIKEY': API_KEY,
     }
     response = requests.request(methed, url, headers=headers, data=payload)
-    return response.text
+
+
+    if response.status_code != 200:
+        print (f'status_code: {response.status_code}')
+        print (f'message: {response.text}')
+        raise HTTPException()
+
+    response = response.json()
+    if 'success' in response and not response.get('success'):
+        print ('status_code=400')
+        print (f'detail={BINGX_ERRORS.get(response.get("code"))}')
+        raise HTTPException()   
+    return response
+
 
 def praseParam(paramsMap):
     sortedKeys = sorted(paramsMap)
     paramsStr = "&".join(["%s=%s" % (x, paramsMap[x]) for x in sortedKeys])
     return paramsStr
-
-
-
 
 
 

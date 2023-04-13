@@ -158,3 +158,14 @@ def buscar_orden(num_orden, posible_files):
             return file
     print ('error')
     exit()
+
+
+def leer_orden(file):
+    path = os.path.join(os.getcwd(), 'ordenes', file)
+    with open(path, 'r') as f:
+        direccion_trade = f.readline().strip()
+        contrato = eval(f.readline().strip())
+        target_entradas = eval(f.readline().strip())
+        apalancamiento = eval(f.readline().strip())
+        monto_entrada = eval(f.readline().strip())
+    return contrato, apalancamiento, direccion_trade, target_entradas, monto_entrada
