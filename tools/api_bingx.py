@@ -50,7 +50,6 @@ def api_request(service, method='GET', query_params=None, header=False, sign=Fal
     }
     if header:
         headers.update({'X-BX-APIKEY': API_KEY})
-    print (f'headers -->  {headers}')
 
     timestamp = int(time.time() *1000)
     params = f'timestamp={timestamp}'
@@ -58,16 +57,13 @@ def api_request(service, method='GET', query_params=None, header=False, sign=Fal
         params += f'&{query_params}'
 
     if sign:
-        print (f'params -->  {params}')
         signature = generate_signature(SECRET_KEY, params)
         params += f'&signature={signature}'
 
     url += f'?{params}'
-    print (f'url  -->  {url}')
     if method == 'GET':
         response = requests.get(url, headers=headers)
     else:
-        print ('enviando un post method')
         response = requests.post(url, headers=headers)
 
     if response.status_code != 200:
