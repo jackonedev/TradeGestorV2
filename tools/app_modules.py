@@ -133,7 +133,7 @@ def ultimas_ordenes(path='ordenes', ultimas=5):
         posible_files.append(file)
     for file in posible_files[-ultimas:]:
         print (file)
-    print ('SELECCIONA el número de orden que quieres operar: default={}'.format(pd.Series(posible_files).max()))
+    print ('SELECCIONA el número de orden que quieres operar: \ndefault={}'.format(pd.Series(posible_files).max()))
     return posible_files
 
 
