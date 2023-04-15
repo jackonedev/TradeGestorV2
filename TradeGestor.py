@@ -161,11 +161,12 @@ while True:
 
 
         ## 1.5 Diversificación de la posición (I)
-        print ('Indique cuales ENTRADAS desea colocar:')
-        estado_entradas = []
-        for i in range(n_entradas):
-            estado_entradas.append(ingreso_bool(f'Colocar ENTRADA Nº {i+1}?'))
-        print (f'Entradas COLOCADAS: {sum(estado_entradas)}  |  Entradas ANULADAS: {len(estado_entradas)-sum(estado_entradas)}')
+        if n_entradas > 1:
+            print ('Indique cuales ENTRADAS desea colocar:')
+            estado_entradas = []
+            for i in range(n_entradas):
+                estado_entradas.append(ingreso_bool(f'Colocar ENTRADA Nº {i+1}?'))
+            print (f'Entradas COLOCADAS: {sum(estado_entradas)}  |  Entradas ANULADAS: {len(estado_entradas)-sum(estado_entradas)}')
         
         
         ##  1.6 Obtención del precio de referencia para los cálculos
