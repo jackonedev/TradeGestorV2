@@ -1,3 +1,4 @@
+comandopyinstaler*
 main*
 *precalculo*
 readme.txt
@@ -10,6 +11,9 @@ cuentas/
 *posicion.txt
 comandopyinstaler*
 indicadores/
+contratos/*
+!contratos/BTC.txt
+!contratos/XRP.txt
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

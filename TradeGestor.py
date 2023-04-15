@@ -161,12 +161,12 @@ while True:
 
 
         ## 1.5 Diversificación de la posición (I)
-        if n_entradas > 1:
-            print ('Indique cuales ENTRADAS desea colocar:')
-            estado_entradas = []
-            for i in range(n_entradas):
-                estado_entradas.append(ingreso_bool(f'Colocar ENTRADA Nº {i+1}?'))
-            print (f'Entradas COLOCADAS: {sum(estado_entradas)}  |  Entradas ANULADAS: {len(estado_entradas)-sum(estado_entradas)}')
+        
+        print ('Indique cuales ENTRADAS desea colocar:')
+        estado_entradas = []
+        for i in range(n_entradas):
+            estado_entradas.append(ingreso_bool(f'Colocar ENTRADA Nº {i+1}?'))
+        print (f'Entradas COLOCADAS: {sum(estado_entradas)}  |  Entradas ANULADAS: {len(estado_entradas)-sum(estado_entradas)}')
         
         
         ##  1.6 Obtención del precio de referencia para los cálculos
@@ -316,9 +316,16 @@ while True:
             i = 1
             file_name = f'{nombre}_{direccion_trade}_{par}_{fecha_actual.strftime("%d_{}").format(nombre_mes)}-01.txt'
         else:
-            last_file = file_names[-1]#############################################################################################################################################################################################
-            i = last_file.split('-')[-1]
-            i = int(i.split('.')[0]) +1
+            last_num = [int(x.split('-')[-1].split('.')[0]) for x in file_names]
+            max_num = max(last_num)
+            i = max_num + 1
+
+
+
+
+            # last_file = file_names[-1]#############################################################################################################################################################################################
+            # i = last_file.split('-')[-1]
+            # i = int(i.split('.')[0]) +1
             file_name = f'{nombre}_{direccion_trade}_{par}_{fecha_actual.strftime("%d_{}").format(nombre_mes)}-{i:02d}.txt'
         file_path = os.path.join(path, file_name)
         ## 1.11.4 Exportamos la data en formato .txt

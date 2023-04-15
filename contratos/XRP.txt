@@ -1,1 +1,1 @@
-{'contractId': '100005', 'symbol': 'XRP-USDT', 'size': '1', 'quantityPrecision': 0, 'pricePrecision': 5, 'feeRate': 0.0005, 'tradeMinLimit': 1, 'maxLongLeverage': 100, 'maxShortLeverage': 100, 'currency': 'USDT', 'asset': 'XRP', 'status': 1}
+{'contractId': '100005', 'symbol': 'XRP-USDT', 'size': '1', 'quantityPrecision': 0, 'pricePrecision': 4, 'feeRate': 0.0005, 'tradeMinLimit': 1, 'maxLongLeverage': 100, 'maxShortLeverage': 100, 'currency': 'USDT', 'asset': 'XRP', 'status': 1}
