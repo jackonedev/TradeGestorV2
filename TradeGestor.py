@@ -218,14 +218,14 @@ while True:
                 alerta(titulo=f'Orden {tipo_orden}', mensaje= f'Precio Entrada = {entrada} {currency}\nStopLoss = {sl} {currency}\nPorcentaje SL = {porcentaje_sl} %')
                 target_entradas.append((entrada, tipo_orden, porcentaje_sl, sl))
 
-            # 1.7.4 Verificación de la congruencia de la operación
-            for entrada, *_, sl in target_entradas:
-                if direccion_trade == 'LONG':
-                    if entrada <= sl:
-                        raise ValueError('En un trade LONG, la entrada no puede ser menor que el StopLoss')
-                elif direccion_trade == 'SHORT':
-                    if entrada >= sl:
-                        raise ValueError('En un trade SHORT, la entrada no puede ser mayor que el StopLoss')
+        # 1.7.4 Verificación de la congruencia de la operación #TODO: podría hacerse la verificación después de crear las variables globales entradas y sl para no repetir dos veces este proceso - o sea que este modulo de verificación debería formar parte de la sección 1.8
+        for entrada, *_, sl in target_entradas:
+            if direccion_trade == 'LONG':
+                if entrada <= sl:
+                    raise ValueError('En un trade LONG, la entrada no puede ser menor que el StopLoss')
+            elif direccion_trade == 'SHORT':
+                if entrada >= sl:
+                    raise ValueError('En un trade SHORT, la entrada no puede ser mayor que el StopLoss')
 
 
         ##  1.8 Dimensionamiento del trade
