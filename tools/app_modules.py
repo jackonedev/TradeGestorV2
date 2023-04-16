@@ -1,7 +1,7 @@
 from functools import reduce
 import os
 from dotenv import load_dotenv
-from plyer import notification
+# from plyer import notification#DESHABILITADO PARA MAC
 import pandas as pd
 
 
@@ -112,15 +112,18 @@ def crear_directorio(nombre):
     if not os.path.exists(path):
         os.mkdir(path)
 
+#INHABILITADO PARA MAC
+# def alerta(titulo, mensaje):
+#     notification.notify(
+#         title = titulo,
+#         message = mensaje,
+#         app_icon = None,
+#         timeout = 5,
+#         toast = False
+#     )
 
 def alerta(titulo, mensaje):
-    notification.notify(
-        title = titulo,
-        message = mensaje,
-        app_icon = None,
-        timeout = 5,
-        toast = False
-    )
+    pass
 
 
 def ultimas_ordenes(path='ordenes', ultimas=5):
@@ -168,4 +171,6 @@ def leer_orden(file):
         target_entradas = eval(f.readline().strip())
         apalancamiento = eval(f.readline().strip())
         monto_entrada = eval(f.readline().strip())
-    return contrato, apalancamiento, direccion_trade, target_entradas, monto_entrada
+    return direccion_trade, contrato, target_entradas, apalancamiento, monto_entrada
+
+
