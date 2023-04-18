@@ -51,6 +51,7 @@ def switch_leverage(symbol, side, leverage):
     return send_request(methed, path, paramsStr, payload)
 
 def post_market_order(symbol, side, positionSide, quantity, type, price=None, stopPrice=None):
+    ## TODO: ESTAMOS TRABAJANDO EN LA NOTEBOOK DEMO
     payload = {}
     path = '/openApi/swap/v2/trade/order'
     methed = "POST"
