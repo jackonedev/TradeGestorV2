@@ -218,7 +218,7 @@ while True:
 
                 porcentaje_sl = round(abs(entrada - sl) / entrada * 100, 2)
                 alerta(titulo=f'Orden {tipo_orden}', mensaje= f'Precio Entrada = {entrada} {currency}\nStopLoss = {sl} {currency}\nPorcentaje SL = {porcentaje_sl} %')
-                target_entradas.append((entrada, tipo_orden, porcentaje_sl, sl))
+                target_entradas.append((round(entrada, price_precision), tipo_orden, porcentaje_sl, round(sl, price_precision)))
 
         # 1.7.4 Verificación de la congruencia de la operación #TODO: podría hacerse la verificación después de crear las variables globales entradas y sl para no repetir dos veces este proceso - o sea que este modulo de verificación debería formar parte de la sección 1.8
         for entrada, *_, sl in target_entradas:
@@ -263,7 +263,7 @@ while True:
                 apal_x = max_leverage_s
                 precio_liquidacion = precio_liquidacion(apal_x, entrada_promedio, direccion_trade)
         ## 1.8.5 Obtener la cantidad de monedas a adquirir por entrada
-        qty_entradas = [round(vol_unidad/abs(x[0] - x[-1]),qty_precision) for x in target_entradas]        
+        qty_entradas = [round(vol_unidad/abs(x[0] - x[-1]), qty_precision) for x in target_entradas]        
         ##TODO: Formula para limitar el riesgo cuando uno se apalanca al máximo -> probablemente de igual a la anterior# qty_entradas = [round(vol_unidad*apal_x/x[0], qty_precision) for x in target_entradas]
 
 
@@ -320,13 +320,6 @@ while True:
             last_num = [int(x.split('-')[-1].split('.')[0]) for x in file_names]
             max_num = max(last_num)
             i = max_num + 1
-
-
-
-
-            # last_file = file_names[-1]#############################################################################################################################################################################################
-            # i = last_file.split('-')[-1]
-            # i = int(i.split('.')[0]) +1
             file_name = f'{nombre}_{direccion_trade}_{par}_{fecha_actual.strftime("%d_{}").format(nombre_mes)}-{i:02d}.txt'
         file_path = os.path.join(path, file_name)
         ## 1.11.4 Exportamos la data en formato .txt
