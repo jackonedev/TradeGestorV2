@@ -50,34 +50,15 @@ def switch_leverage(symbol, side, leverage):
     paramsStr = praseParam(paramsMap)
     return send_request(methed, path, paramsStr, payload)
 
-def post_market_order(symbol, side, positionSide, quantity, type, price=None, stopPrice=None):
-    ## TODO: ESTAMOS TRABAJANDO EN LA NOTEBOOK DEMO
+
+def post_order(**kwars):
     payload = {}
     path = '/openApi/swap/v2/trade/order'
     methed = "POST"
-    paramsMap = {
-        "symbol": symbol,
-        "side": side,
-        "positionSide": positionSide,
-        "quantity": quantity,
-        "type": type,
-        "timestamp": int(time.time() * 1000),
-    }
-
-    if type == "LIMIT":
-        paramsMap["price"] = price
-
-    elif type == 'TRIGGER_LIMIT':
-        paramsMap["price"] = price
-        paramsMap["stopPrice"] = price
-
-    elif type == 'STOP_MARKET' or type == 'TAKE_PROFIT_MARKET' or type == 'TRIGGER_MARKET':
-        paramsMap["stopPrice"] = stopPrice
-
-
+    paramsMap = {"timestamp": int(time.time() * 1000)}
+    paramsMap.update(kwars)
     paramsStr = praseParam(paramsMap)
     return send_request(methed, path, paramsStr, payload)
-
 
 
 def get_sign(api_secret, payload):
