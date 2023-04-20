@@ -199,7 +199,7 @@ while True:
                     elif pct and direccion_trade=='SHORT':
                         entrada = benchmark *(1+entrada)
                     elif not entrada:
-                        tipo_orden = "LIMIT-MARKET"
+                        tipo_orden = "TRIGGER-MARKET"
                         entrada = benchmark
                 else:
                     print ('Falló la operativa')
