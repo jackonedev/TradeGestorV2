@@ -17,6 +17,7 @@ indicadores/
 contratos/*
 !contratos/BTC.txt
 !contratos/XRP.txt
+backup
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
