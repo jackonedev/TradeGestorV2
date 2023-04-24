@@ -54,11 +54,20 @@ def switch_leverage(symbol, side, leverage):
 def post_order(**kwars):
     payload = {}
     path = '/openApi/swap/v2/trade/order'
-    methed = "POST"
+    method = "POST"
     paramsMap = {"timestamp": int(time.time() * 1000)}
     paramsMap.update(kwars)
     paramsStr = praseParam(paramsMap)
-    return send_request(methed, path, paramsStr, payload)
+    return send_request(method, path, paramsStr, payload)
+
+def api_request(method, path, **kwars):
+    payload = {}
+    method = method
+    path = path
+    paramsMap = {"timestamp": int(time.time() * 1000)}
+    paramsMap.update(kwars)
+    paramsStr = praseParam(paramsMap)
+    return send_request(method, path, paramsStr, payload)
 
 
 def get_sign(api_secret, payload):

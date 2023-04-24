@@ -26,10 +26,13 @@ BINGX_ERRORS = {
     80017: "position does not exist"
 }
 
-services = {'GET_1': '/openApi/swap/v2/quote/contracts',
-            'GET_2': '/openApi/swap/v2/user/balance',
-            'GET_3': '/openApi/swap/v2/quote/price',
-            'POST_1': '/openApi/swap/v2/trade/leverage'
+services = {'GET_1':'/openApi/swap/v2/quote/contracts',
+            'GET_2':'/openApi/swap/v2/user/balance',
+            'GET_3':'/openApi/swap/v2/quote/price',
+            'POST_1': '/openApi/swap/v2/trade/order',
+            'POST_2': '/openApi/swap/v2/trade/leverage',
+            'GET_4': '/openApi/swap/v2/trade/openOrders',
+            'GET_5': '/openApi/swap/v2/trade/leverage',
 }
 
 
@@ -43,7 +46,7 @@ def generate_signature(secret_key, query_params):
     return signature
 
 def api_request(service, method='GET', query_params=None, header=False, sign=False):
-    """docstring"""
+    """Esta función solo sirve para crear otras funciones, nunca debe ser utilizada por si sola"""
     url = f'{URL}{service}'
     headers = {
         'Content-Type': 'application/json'

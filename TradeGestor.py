@@ -92,12 +92,6 @@ while True:
         for key in dict_cta.keys():
                 locals()[key] = dict_cta[key]
 
-        if nombre == 'ONLINE':
-            try:
-                vol_cta = get_account_balance()
-            except:
-                print ('Ocurrió un error al querer actualizar el volumen de la cuenta')
-
         ## CONFIRMACION DE CUENTA
         imprimir_cuenta(nombre, dict_cta)
         continuar = ingreso_bool('\nContinuar?')
