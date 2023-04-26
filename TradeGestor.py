@@ -28,6 +28,7 @@ CUENTAS = ['online.txt', 'offline.txt', 'active.pkl']
 path = os.path.join(os.getcwd(), 'cuentas')
 if not os.path.exists(path):
     alerta(titulo='BIENVENDIO A TRADE GESTOR', mensaje='Por favor dirijase a la parte de configuración y configure su cuenta')
+    print('\nBIENVENDIO A TRADE GESTOR\nPor favor dirijase a la parte de configuración y configure su cuenta')
     os.mkdir(path)
 ## create files for each CUENTAS
 for i, cuenta in enumerate(CUENTAS):
