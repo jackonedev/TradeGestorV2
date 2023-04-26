@@ -1,23 +1,37 @@
 from itertools import count
 from collections import deque
 
-def ingreso_bool(label):
-    x_bool = count(1)
-    x_bool_limit = 3  
-    chance = 1
-    print (label)
-    print(('< 1: Si >    < 0: No >'))
-    ingreso = input('>> ')
-    if not (ingreso == '1' or ingreso == '0'):
-        chance = next(x_bool) + 1
-        print(( 'Intento {} de {}'.format(chance, x_bool_limit)))
-        ingreso = input('>> ')
+# def ingreso_bool(label):
+#     x_bool_limit = 3  
+#     chance = 1
+#     print (label)
+#     print(('< 1: Si >    < 0: No >'))
+#     ingreso = input('>> ')
+#     if not (ingreso == '1' or ingreso == '0'):
+#         chance += 1
+#         print(( 'Intento {} de {}'.format(chance, x_bool_limit)))
+#         ingreso = input('>> ')
 
-    if chance == x_bool_limit:
-        print(( 'Intento agotados\n'))
-        return
-    print()
-    return bool(int(ingreso))
+#     if chance == x_bool_limit:
+#         print(( 'Intento agotados\n'))
+#         return
+#     print()
+#     return bool(int(ingreso))
+
+def ingreso_bool(label):
+    MAX_TRIES = 3
+    print(label)
+    print('< 1: Sí >    < 0: No >')
+    for i in range(MAX_TRIES):
+        ingreso = input('>> ')
+        if ingreso == '1':
+            return True
+        elif ingreso == '0':
+            return False
+        else:
+            print('Entrada inválida. Por favor, ingrese 1 o 0.')
+    print('Intentos agotados.')
+    return None
 
 
 def ingreso_bool_personalizado(op1, op2, default=None):
