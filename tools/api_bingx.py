@@ -102,7 +102,6 @@ def get_price(symbol):
     return float(api_request(services['GET_3'], query_params=f'symbol={symbol}')['data']['price'])
 
 def get_benchmark(symbol):
-    print ('Obteniendo precio de {}...'.format(symbol))
     try:
         benchmark = get_price(symbol)
     except:

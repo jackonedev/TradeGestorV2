@@ -112,7 +112,7 @@ while True:
         print (display_app_1)
 
         ## 1.1 Selección del par a operar
-        print ('Seleccione par a operar:')
+        print ('\t(1) Seleccione par a operar:\n')
         par = ingreso_bool_personalizado('BTC', 'XRP')
         if not verificar_fichero(par):
             continue
@@ -132,7 +132,7 @@ while True:
         max_leverage_s = int(contract['maxShortLeverage'])
 
         ##  1.3 Dirección del trade
-        print ('Indique dirección del trade:')
+        print ('\n\t(2) Indique dirección del trade:\n')
         direccion_trade = ingreso_bool_personalizado('LONG', 'SHORT')
 
         ## 1.4 Verificacion de la operativa
@@ -153,18 +153,21 @@ while True:
             continue
 
         ## 1.5 Diversificación de la posición (I)
+        print ('\n\t(3) Indique cuales ENTRADAS desea colocar:')
         estado_entradas = diversificar_entradas(n_entradas)
         if sum(estado_entradas) == 0:
             print ('No se ha seleccionado ninguna entrada')
             continue
         
         ##  1.6 Obtención del precio de referencia para los cálculos
+        print ('\n\t(4) Obteniendo precio de {}\n'.format(symbol))
         benchmark = get_benchmark(symbol)
         if benchmark is None:
             continue
 
 
         ##  1.7 Diversificación de la posición (II)
+        print ('\n\t(5) Definir targets de entrada:')
         target_entradas = definir_entradas(estado_entradas, benchmark, direccion_trade, currency, price_precision)
 
         # 1.8 Verificación de la congruencia de la operación
@@ -326,7 +329,7 @@ while True:
         spread = 0.00035
         symbol = symbol
         positionSide = direccion_trade
-        apalancamiento = apal_x
+        # apalancamiento = apal_x
         monto_entrada = qty_entradas
 
         if positionSide == 'LONG':
@@ -387,24 +390,24 @@ while True:
             ordenes.append((entrada, sl))
 
 
-        print('''
-        ============================================================
-                            ORDENES A COLOCAR
-        ============================================================
-        ''')
 
         for i in range(len(target_entradas)):
             print(f'''
-            ORDEN DE ENTRADA {i}
+            ORDEN DE ENTRADA {i+1}
             ''')
             print(ordenes[i][0])
             print(f'''
-            ORDEN DE STOP LOSS {i}
+            ORDEN DE STOP LOSS {i+1}
             ''')
             print(ordenes[i][1])
 
-        print('Haciendo verificaciones previas...')
 
+        print('''
+        ============================================================
+                            COLOCANDO ORDENES
+        ============================================================
+        ''')
+        print('\n\t(6) Verificando apalancamiento\n')
         # COMPROBAR ESTADO DE LAS ORDENES EN EL EXCHANGE
         ## AJUSTAR EL APALANCAMIENTO EN CASO QUE SEA NECESARIO
         ## TODO: la función api_requests del modulo tools.api_bingx está en desuso y debe ser reemplazada por el módulo v2
@@ -424,12 +427,12 @@ while True:
                         if apal_side.find(positionSide.lower()) != -1:
                             apal_size = apal_ord[apal_side]
                     # comprobar que el apalancamiento de las ordenes sea el mismo que el que se quiere colocar
-                    if apal_size != apalancamiento:
+                    if apal_size != apal_x:
                         print('Existen ordenes en ese par con un apalancamiento diferente')
                         exit()
                     break
             if not existe_orden:
-                response = switch_leverage(symbol, direccion_trade, apalancamiento)
+                response = switch_leverage(symbol, direccion_trade, apal_x)
                 if response['code'] == 0:
                     print ('Actualización de apalancamiento OK: {}'.format(response['data']))
                 else:
@@ -437,7 +440,7 @@ while True:
                     exit()
         # Si no existen ordenes previas, configurar apalancamiento
         else:
-            response = switch_leverage(symbol, direccion_trade, apalancamiento)
+            response = switch_leverage(symbol, direccion_trade, apal_x)
             if response['code'] == 0:
                 print ('Actualización de apalancamiento OK: {}'.format(response['data']))
             else:
@@ -445,6 +448,7 @@ while True:
                 exit()
 
 
+        print('\n\t(7) Enviando ordenes\n')
         print('Colocando ordenes...')
 
         #
@@ -452,17 +456,13 @@ while True:
         #
         responses = []
         for i in range(len(target_entradas)):
-
             response_entrada = post_order(**ordenes[i][0])
-
             if response_entrada['code'] == 0:
                 print ('Orden de entrada OK: {}'.format(response['data']))
             else:
                 print ('Error al colocar la orden de entrada: {}'.format(response['msg']))
                 exit()
-
             response_sl = post_order(**ordenes[i][1])
-
             if response['code'] == 0:
                 print ('Orden de stop loss OK: {}'.format(response['data']))
             else:
@@ -471,23 +471,33 @@ while True:
             responses.append((response_entrada, response_sl))
 
 
-
         # export responses as json
         with open('responses.json', 'a') as f:
-            json.dump(responses, f)
+            f.write(json.dumps(responses) + '\n')
+
+
+        # Verificar si el archivo ya existe
+        headers_exist = True
+        if not os.path.exists('responses.csv'):
+            headers_exist = False
 
         # export responses as csv
-        with open('responses.csv', 'a') as f:
-
+        with open('responses.csv', 'a', newline='') as f:
             writer = csv.writer(f)
 
-            for response in responses:
-                writer.writerow(responses)
+            # Escribir los encabezados de las columnas en el archivo
+            if not headers_exist:
+                writer.writerow(['symbol', 'orderId', 'side', 'positionSide', 'type'])
 
-        # export responses as txt
-        with open('responses.txt', 'a') as f:
-            for response in responses:
-                f.write(str(responses))
+            # Escribir cada registro en el archivo
+            for respuesta in responses:
+                for sub_respuesta in respuesta:
+                    order = sub_respuesta['data']['order']
+                    writer.writerow([order['symbol'], order['orderId'], order['side'], order['positionSide'], order['type']])
+
+
+        print('''\n\nFinalización de la ejecución del trade, no sé olvide de gestionar su TakeProfit y ordenes abiertas. Muchas gracias por usar la calculadora''')
+
 
 #############################################################################################################
 #############################################################################################################
