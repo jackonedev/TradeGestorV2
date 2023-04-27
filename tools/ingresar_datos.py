@@ -5,11 +5,10 @@ from collections import deque
 def diversificar_entradas(n_entradas):
     "Devuelve una lista con las entradas que debe calcular"
     if n_entradas > 1:
-        print ('Indique cuales ENTRADAS desea colocar:')
         estado_entradas = []
         for i in range(n_entradas):
-            estado_entradas.append(ingreso_bool(f'Colocar ENTRADA Nº {i+1}?'))
-        print (f'Entradas COLOCADAS: {sum(estado_entradas)}  |  Entradas ANULADAS: {len(estado_entradas)-sum(estado_entradas)}')
+            estado_entradas.append(ingreso_bool(f'\nColocar ENTRADA Nº {i+1}?'))
+        print (f'\n\nEntradas COLOCADAS: {sum(estado_entradas)}  |  Entradas ANULADAS: {len(estado_entradas)-sum(estado_entradas)}')
         return estado_entradas
     else:
         return [True]
