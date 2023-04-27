@@ -1,16 +1,20 @@
 import numpy as np
-from tools.ingresar_datos import ingreso_bool_personalizado, ingresar_tasa, ingreso_entero, ingreso_bool, entero_o_porcentual
-from tools.api_bingx import actualizar_contratos, get_account_balance, get_price
-from tools.app_modules import comprobar_apis, imprimir_cuenta, cargar_contrato, apalancamiento, precio_liquidacion, generar_rows, obtener_sl, crear_directorio, alerta
+from tools.ingresar_datos import ingreso_bool_personalizado, ingresar_tasa, ingreso_entero, ingreso_bool, entero_o_porcentual, diversificar_entradas
+from tools.api_bingx import actualizar_contratos, get_account_balance, get_price, get_benchmark, api_request
+from tools.app_modules import comprobar_apis, imprimir_cuenta, cargar_contrato, apalancamiento, calcular_precio_liquidacion, generar_rows, obtener_sl, crear_directorio, alerta, verificar_fichero, definir_entradas
 online = comprobar_apis()
 import os
 import pickle
-from itertools import count
+from tools.api_bingx_v2 import switch_leverage, post_order
 from datetime import datetime
 from rich.console import Console
 from rich.table import Table
 import codecs
 import locale
+import csv, json
+import time
+
+
 
 locale.setlocale(locale.LC_TIME, "es_ES.UTF-8")
 
@@ -110,10 +114,7 @@ while True:
         ## 1.1 Selección del par a operar
         print ('Seleccione par a operar:')
         par = ingreso_bool_personalizado('BTC', 'XRP')
-        path = os.path.join(os.getcwd(), 'contratos')
-        if not os.path.exists(path):
-            print ('Por favor vaya a configuración y seleccione Descargar contratos')
-            print ('Falló la operativa')
+        if not verificar_fichero(par):
             continue
 
         ##  1.2 Búsqueda de contrato, y obtención de cifras significativas
@@ -130,7 +131,6 @@ while True:
         max_leverage_l = int(contract['maxLongLeverage'])
         max_leverage_s = int(contract['maxShortLeverage'])
 
-
         ##  1.3 Dirección del trade
         print ('Indique dirección del trade:')
         direccion_trade = ingreso_bool_personalizado('LONG', 'SHORT')
@@ -138,9 +138,9 @@ while True:
         ## 1.4 Verificacion de la operativa
         export_data_inicial = """
 >>    DATOS DE LA CUENTA {}
-        - volumen cuenta  = {}
+        - volumen cuenta  = {} USDT
         - riesgo por operación = {}%
-        - volumen operacion = {}
+        - volumen operacion = {} USDT
 
 >>    DATOS DE LA OPERACION EN {}
         - par = {}
@@ -148,74 +148,26 @@ while True:
         - volumen por entrada = {} {}
         """.format(nombre, vol_cta, riesgo_op, vol_op, direccion_trade, symbol, n_entradas, round(vol_unidad,2), currency)
         print (export_data_inicial)
-
-
         continuar = ingreso_bool('Continuar?')
         if not continuar:
             continue
 
-
         ## 1.5 Diversificación de la posición (I)
-        if n_entradas > 1:
-            print ('Indique cuales ENTRADAS desea colocar:')
-            estado_entradas = []
-            for i in range(n_entradas):
-                estado_entradas.append(ingreso_bool(f'Colocar ENTRADA Nº {i+1}?'))
-            print (f'Entradas COLOCADAS: {sum(estado_entradas)}  |  Entradas ANULADAS: {len(estado_entradas)-sum(estado_entradas)}')
-        else:
-            estado_entradas = [True]
+        estado_entradas = diversificar_entradas(n_entradas)
+        if sum(estado_entradas) == 0:
+            print ('No se ha seleccionado ninguna entrada')
+            continue
         
         ##  1.6 Obtención del precio de referencia para los cálculos
-        print ('Obteniendo precio de {}...'.format(symbol))
-        try:
-            benchmark = get_price(symbol)
-        except:
-            print ('Error al obtener precio...\nPor favor ingreselo manualmente')
-            benchmark = float(input('Precio de {} = '.format(par)))
-        print ('Precio actual de {} = {} {}'.format(symbol, benchmark, currency))
+        benchmark = get_benchmark(symbol)
+        if benchmark is None:
+            continue
+
 
         ##  1.7 Diversificación de la posición (II)
-        target_entradas = []
-        entrada_count = count(1)
-        for estado in estado_entradas:
-            if estado:
-                print (f'\n>>  ENTRADA Nº {next(entrada_count)}')
-                # 1.7.1 Tipo de orden
-                print ('Tipo de orden:')
-                tipo_orden = ingreso_bool_personalizado('MARKET', 'LIMIT', default='LIMIT')
-                # 1.7.2 Precio de entrada
-                if tipo_orden == 'MARKET':
-                    entrada = benchmark
-                elif tipo_orden == 'LIMIT':
-                    print ('Orden LIMIT | precio actual {} {}'.format(benchmark, currency))
-                    entrada, pct = entero_o_porcentual('Precio de ENTRADA | en blanco significa precio actual:')
-                    if pct and direccion_trade=='LONG':
-                        entrada = benchmark *(1-entrada)
-                    elif pct and direccion_trade=='SHORT':
-                        entrada = benchmark *(1+entrada)
-                    elif not entrada:
-                        tipo_orden = "TRIGGER_MARKET"
-                        entrada = benchmark
-                else:
-                    print ('Falló la operativa')
-                    continue
-                # 1.7.3 Precio de stoploss
-                sl, pct = entero_o_porcentual('Indique precio de STOPLOSS:')
-                chance_sl = count(1)
-                sl = obtener_sl(entrada, sl, pct, direccion_trade)
-                if not sl:
-                    print('error en la operativa- el stop loss quedó vacio')
-                    while next(chance_sl) < 5:
-                        sl, pct = entero_o_porcentual('Indique precio de STOPLOSS:')
-                        sl = obtener_sl(entrada, sl, pct, direccion_trade)
-                        if not sl:
-                            print('error en la operativa- el stop loss quedó vacio')
+        target_entradas = definir_entradas(estado_entradas, benchmark, direccion_trade, currency, price_precision)
 
-                porcentaje_sl = round(abs(entrada - sl) / entrada * 100, 2)
-                alerta(titulo=f'Orden {tipo_orden}', mensaje= f'Precio Entrada = {entrada} {currency}\nStopLoss = {sl} {currency}\nPorcentaje SL = {porcentaje_sl} %')
-                target_entradas.append((round(entrada, price_precision), tipo_orden, porcentaje_sl, round(sl, price_precision)))
-
-        # 1.7.4 Verificación de la congruencia de la operación #TODO: podría hacerse la verificación después de crear las variables globales entradas y sl para no repetir dos veces este proceso - o sea que este modulo de verificación debería formar parte de la sección 1.8
+        # 1.8 Verificación de la congruencia de la operación
         for entrada, *_, sl in target_entradas:
             if direccion_trade == 'LONG':
                 if entrada <= sl:
@@ -224,21 +176,27 @@ while True:
                 if entrada >= sl:
                     raise ValueError('En un trade SHORT, la entrada no puede ser mayor que el StopLoss')
 
-
-        ##  1.8 Dimensionamiento del trade
+        ##  1.9 Dimensionamiento del trade
         ordenes = [orden for _, orden, *_ in target_entradas]
-        ##  1.8.1 Obteniendo entradas y sacando el promedio
+        ##  1.9.1 Obteniendo entradas y sacando el promedio
         entradas = [entrada for entrada, *_ in target_entradas]
         entrada_promedio = np.mean(entradas)
-        ## 1.8.2 Obtener el stop-loss más alejado
+        ## 1.9.3 Cantidad de activo en el contrato
+        qty_entradas = [round(vol_unidad/abs(x[0] - x[-1]), qty_precision) for x in target_entradas]
+
+        ## 1.9.4 Obtener el stop-loss más alejado
         sls = [sl for *_, sl in target_entradas]
         if direccion_trade == 'LONG':
             worst_sl = np.min(sls)
         elif direccion_trade == 'SHORT':
             worst_sl = np.max(sls)
-        ## 1.8.3 Obtener el apalancamiento máximo
+        ## 1.9.3 Obtener el apalancamiento máximo
         apal_x, precio_liq = apalancamiento(entrada_promedio, worst_sl, direccion_trade)
-        # 1.8.4 Verificación del estar dentro de los límites aceptables
+        ## 1.9.4 Calcular el margen de la posición
+        margen = round(entrada_promedio + sum(qty_entradas)/apal_x, 4)## calculado pero sin utilidad
+
+        # 1.9.5 Verificación del estar dentro de los límites aceptables
+        # 1.9.6 Verificación del precio de liquidacion
         if direccion_trade == 'LONG' and apal_x > max_leverage_l:
             print(f'El apalancamiento máximo para este par es de {max_leverage_l}x\nEl apalancamiento calculado es de {apal_x}x')
             print ('Desea apalancarse al máximo y utilizar un margen mayor de su cuenta?')
@@ -247,7 +205,11 @@ while True:
                 continue
             else:
                 apal_x = max_leverage_l
-                precio_liquidacion = precio_liquidacion(apal_x, entrada_promedio, direccion_trade)
+                precio_liq = calcular_precio_liquidacion(apal_x, entrada_promedio, direccion_trade)
+                if precio_liq >= worst_sl:
+                    print ('El precio de liquidación es superior al StopLoss')
+                    print ('Falló la operativa')
+                    continue
         if direccion_trade == 'SHORT' and apal_x > max_leverage_s:
             print(f'El apalancamiento máximo para este par es de {max_leverage_s}x\nEl apalancamiento calculado es de {apal_x}x')
             print ('Desea apalancarse al máximo y utilizar un margen mayor de su cuenta?')
@@ -256,13 +218,15 @@ while True:
                 continue
             else:
                 apal_x = max_leverage_s
-                precio_liquidacion = precio_liquidacion(apal_x, entrada_promedio, direccion_trade)
-        ## 1.8.5 Obtener la cantidad de monedas a adquirir por entrada
-        qty_entradas = [round(vol_unidad/abs(x[0] - x[-1]), qty_precision) for x in target_entradas]        
-        ##TODO: Formula para limitar el riesgo cuando uno se apalanca al máximo -> probablemente de igual a la anterior# qty_entradas = [round(vol_unidad*apal_x/x[0], qty_precision) for x in target_entradas]
+                precio_liq = calcular_precio_liquidacion(apal_x, entrada_promedio, direccion_trade)
+                if precio_liq <= worst_sl:
+                    print ('El precio de liquidación es inferior al StopLoss')
+                    print ('Falló la operativa')
+                    continue
 
 
-        ##  1.9 Descripción del trade
+
+        ##  1.10... Descripción del trade
         export_data_trade =f"""
 >>  DESCRIPCION TRADE {symbol} {direccion_trade}
         - Precio de referencia = {benchmark}
@@ -352,9 +316,178 @@ while True:
         print('- Orden exportada en: {}\n'.format(file_name))
         
 
+        ## 1.13 COLOCACION DE ORDENES
+        colocar_ordenes = ingreso_bool('\nDesea colocar las ordenes?')
+        if not colocar_ordenes:
+            print('Volviendo al menu principal')
+            continue
+
+
+        spread = 0.00035
+        symbol = symbol
+        positionSide = direccion_trade
+        apalancamiento = apal_x
+        monto_entrada = qty_entradas
+
+        if positionSide == 'LONG':
+            entrada_side = 'BUY'
+            sl_side = 'SELL'
+        elif positionSide == 'SHORT':
+            entrada_side = 'SELL'
+            sl_side = 'BUY'
+
+
+        print('''
+        ============================================================
+                            GENERANDO ORDENES
+        ============================================================
+        ''')
+        ordenes = []
+        for i in range(len(target_entradas)):
+            entrada = {}
+            sl = {}
+
+            type_entrada = target_entradas[i][1]
+            type_sl = 'TRIGGER_MARKET'#STOP_MARKET: promedia los stoploss
+
+            if type_entrada=='TRIGGER_MARKET':
+                benchmark = get_price(symbol)
+                if positionSide == 'LONG':
+                    stopPrice = benchmark * (1 - spread)
+                elif positionSide == 'SHORT':
+                    stopPrice = benchmark * (1 + spread)
+
+            quantity = monto_entrada[i]
+            
+            orden = {
+                "symbol": symbol,
+                "positionSide": positionSide,
+                'quantity': quantity
+            }
+
+            entrada.update(orden)
+            entrada.update({'side': entrada_side,'type': type_entrada})
+            sl.update(orden)
+            sl.update({'side': sl_side,'type': type_sl})
+            if type_entrada == 'TRIGGER_MARKET':
+                dif_sl = benchmark * target_entradas[i][2] /100
+                if positionSide == 'LONG':
+                    sl_price = benchmark - dif_sl
+                else:
+                    sl_price = benchmark + dif_sl
+                sl.update({'stopPrice': sl_price})
+            else:
+                sl.update({'stopPrice': target_entradas[i][-1]})
+            ##
+            if type_entrada.find('LIMIT') != -1:
+                entrada.update({'price': target_entradas[i][0]})
+            elif type_entrada.find('TRIGGER') != -1:
+                entrada.update({'stopPrice':stopPrice})
+
+            ordenes.append((entrada, sl))
+
+
+        print('''
+        ============================================================
+                            ORDENES A COLOCAR
+        ============================================================
+        ''')
+
+        for i in range(len(target_entradas)):
+            print(f'''
+            ORDEN DE ENTRADA {i}
+            ''')
+            print(ordenes[i][0])
+            print(f'''
+            ORDEN DE STOP LOSS {i}
+            ''')
+            print(ordenes[i][1])
+
+        print('Haciendo verificaciones previas...')
+
+        # COMPROBAR ESTADO DE LAS ORDENES EN EL EXCHANGE
+        ## AJUSTAR EL APALANCAMIENTO EN CASO QUE SEA NECESARIO
+        ## TODO: la función api_requests del modulo tools.api_bingx está en desuso y debe ser reemplazada por el módulo v2
+        response = api_request(service='/openApi/swap/v2/trade/openOrders', header=True, sign=True)
+        ordenes_exchange = response['data']['orders']
+        if len(ordenes_exchange) > 0:
+            existe_orden = False
+            for ord in ordenes_exchange:
+            # verificar que las ordenes sean del symbol correcto
+                if ord['symbol'] == symbol:
+                    existe_orden = True
+                    # consultar apalancamiento
+                    response = api_request(service='/openApi/swap/v2/trade/leverage', query_params=f"symbol={symbol}" ,header=True, sign=True)
+                    apal_ord = response['data']
+                    # verificar dirección del trade y tamaño del apalancamiento
+                    for apal_side in apal_ord.keys():
+                        if apal_side.find(positionSide.lower()) != -1:
+                            apal_size = apal_ord[apal_side]
+                    # comprobar que el apalancamiento de las ordenes sea el mismo que el que se quiere colocar
+                    if apal_size != apalancamiento:
+                        print('Existen ordenes en ese par con un apalancamiento diferente')
+                        exit()
+                    break
+            if not existe_orden:
+                response = switch_leverage(symbol, direccion_trade, apalancamiento)
+                if response['code'] == 0:
+                    print ('Actualización de apalancamiento OK: {}'.format(response['data']))
+                else:
+                    print ('Error al actualizar el apalancamiento: {}'.format(response['msg']))
+                    exit()
+        # Si no existen ordenes previas, configurar apalancamiento
+        else:
+            response = switch_leverage(symbol, direccion_trade, apalancamiento)
+            if response['code'] == 0:
+                print ('Actualización de apalancamiento OK: {}'.format(response['data']))
+            else:
+                print ('Error al actualizar el apalancamiento: {}'.format(response['msg']))
+                exit()
+
+
+        print('Colocando ordenes...')
+
+        #
+        # COLOCACION DE LAS ORDENES
+        #
+        responses = []
+        for i in range(len(target_entradas)):
+
+            response_entrada = post_order(**ordenes[i][0])
+
+            if response_entrada['code'] == 0:
+                print ('Orden de entrada OK: {}'.format(response['data']))
+            else:
+                print ('Error al colocar la orden de entrada: {}'.format(response['msg']))
+                exit()
+
+            response_sl = post_order(**ordenes[i][1])
+
+            if response['code'] == 0:
+                print ('Orden de stop loss OK: {}'.format(response['data']))
+            else:
+                print ('Error al colocar la orden de stop loss: {}'.format(response['msg']))
+                exit()
+            responses.append((response_entrada, response_sl))
 
 
 
+        # export responses as json
+        with open('responses.json', 'a') as f:
+            json.dump(responses, f)
+
+        # export responses as csv
+        with open('responses.csv', 'a') as f:
+
+            writer = csv.writer(f)
+
+            for response in responses:
+                writer.writerow(responses)
+
+        # export responses as txt
+        with open('responses.txt', 'a') as f:
+            for response in responses:
+                f.write(str(responses))
 
 #############################################################################################################
 #############################################################################################################

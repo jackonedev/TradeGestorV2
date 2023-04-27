@@ -100,3 +100,17 @@ def get_account_balance():
 
 def get_price(symbol):
     return float(api_request(services['GET_3'], query_params=f'symbol={symbol}')['data']['price'])
+
+def get_benchmark(symbol):
+    print ('Obteniendo precio de {}...'.format(symbol))
+    try:
+        benchmark = get_price(symbol)
+    except:
+        print ('Error al obtener precio...\nPor favor ingreselo manualmente')
+        try:
+            benchmark = float(input('Precio de {} = '.format(symbol)))
+        except:
+            print ('Error al obtener el precio')
+            return
+    print ('Precio actual de {} = {} USDT'.format(symbol, benchmark))
+    return benchmark

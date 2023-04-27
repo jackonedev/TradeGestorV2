@@ -1,22 +1,18 @@
 from itertools import count
 from collections import deque
 
-# def ingreso_bool(label):
-#     x_bool_limit = 3  
-#     chance = 1
-#     print (label)
-#     print(('< 1: Si >    < 0: No >'))
-#     ingreso = input('>> ')
-#     if not (ingreso == '1' or ingreso == '0'):
-#         chance += 1
-#         print(( 'Intento {} de {}'.format(chance, x_bool_limit)))
-#         ingreso = input('>> ')
 
-#     if chance == x_bool_limit:
-#         print(( 'Intento agotados\n'))
-#         return
-#     print()
-#     return bool(int(ingreso))
+def diversificar_entradas(n_entradas):
+    "Devuelve una lista con las entradas que debe calcular"
+    if n_entradas > 1:
+        print ('Indique cuales ENTRADAS desea colocar:')
+        estado_entradas = []
+        for i in range(n_entradas):
+            estado_entradas.append(ingreso_bool(f'Colocar ENTRADA Nº {i+1}?'))
+        print (f'Entradas COLOCADAS: {sum(estado_entradas)}  |  Entradas ANULADAS: {len(estado_entradas)-sum(estado_entradas)}')
+        return estado_entradas
+    else:
+        return [True]
 
 def ingreso_bool(label):
     MAX_TRIES = 3
@@ -35,33 +31,68 @@ def ingreso_bool(label):
 
 
 def ingreso_bool_personalizado(op1, op2, default=None):
-    x_bool = count(1)
-    x_bool_limit = 3  
+    "Esta función permite ingresar 1 o 0, o el nombre de un contrato."
+    MAX_TRIES = 3  
     chance = 1
-    print(('< 1: {} >    < 0: {} >'.format(op1, op2)))
-    ingreso = input('>> ')
-    if default and ingreso=='':
-        return default
-    if not (ingreso == '1' or ingreso == '0'):
-        try:
-            with open('contratos/{}.txt'.format(ingreso.upper()),'r') as f:
-                f.read()
-            return ingreso.upper()
-            pass
-        except:
-            pass
-        chance = next(x_bool) + 1
-        print(( 'Intento {} de {}'.format(chance, x_bool_limit)))
-        ingreso = input('>> ')
+    
+    print(f'< 1: {op1} >    < 0: {op2} >')
+    
+    while chance <= MAX_TRIES:
+        ingreso = input('>> ').strip().upper()
+        
+        if ingreso == '':
+            if default is not None:
+                return default
+            else:
+                print('Por favor ingrese 1 o 0.')
+        elif ingreso in ('1', '0'):
+            if ingreso == '1':
+                return op1
+            else:
+                return op2
+        else:
+            try:
+                with open(f'contratos/{ingreso}.txt', 'r') as f:
+                    f.read()
+                return ingreso
+            except FileNotFoundError:
+                pass
+            
+            chance += 1
+            if chance <= MAX_TRIES:
+                print(f'Intento {chance} de {MAX_TRIES}. Por favor ingrese 1 o 0.')
+    print('Intentos agotados.\n')
+    
 
-    if chance == x_bool_limit:
-        print(( 'Intento agotados\n'))
-        return
-    print()
-    if ingreso == '1':
-        return op1
-    else:
-        return op2
+
+# def ingreso_bool_personalizado(op1, op2, default=None):
+#     x_bool = count(1)
+#     x_bool_limit = 3  
+#     chance = 1
+#     print(('< 1: {} >    < 0: {} >'.format(op1, op2)))
+#     ingreso = input('>> ')
+#     if default and ingreso=='':
+#         return default
+#     if not (ingreso == '1' or ingreso == '0'):
+#         try:
+#             with open('contratos/{}.txt'.format(ingreso.upper()),'r') as f:
+#                 f.read()
+#             return ingreso.upper()
+#         except:
+#             pass
+#         chance += 1
+#         print(( 'Intento {} de {}'.format(chance, x_bool_limit)))
+#         ingreso = input('>> ')
+
+#     if chance == x_bool_limit:
+#         print(( 'Intento agotados\n'))
+#         return
+    
+#     print()
+#     if ingreso == '1':
+#         return op1
+#     else:
+#         return op2
 
 
 def ingreso_entero(label):#TODO: Decorators
