@@ -413,31 +413,45 @@ while True:
         ## TODO: la función api_requests del modulo tools.api_bingx está en desuso y debe ser reemplazada por el módulo v2
         response = api_request(service='/openApi/swap/v2/trade/openOrders', header=True, sign=True)
         ordenes_exchange = response['data']['orders']
-        if len(ordenes_exchange) > 0:
-            existe_orden = False
+        existe_orden = False
+        if len(ordenes_exchange) > 0:# si existen ordenes abiertas
             for ord in ordenes_exchange:
             # verificar que las ordenes sean del symbol correcto
                 if ord['symbol'] == symbol:
                     existe_orden = True
-                    # consultar apalancamiento
-                    response = api_request(service='/openApi/swap/v2/trade/leverage', query_params=f"symbol={symbol}" ,header=True, sign=True)
-                    apal_ord = response['data']
-                    # verificar dirección del trade y tamaño del apalancamiento
-                    for apal_side in apal_ord.keys():
-                        if apal_side.find(positionSide.lower()) != -1:
-                            apal_size = apal_ord[apal_side]
-                    # comprobar que el apalancamiento de las ordenes sea el mismo que el que se quiere colocar
-                    if apal_size != apal_x:
-                        print('Existen ordenes en ese par con un apalancamiento diferente')
-                        exit()
                     break
-            if not existe_orden:
-                response = switch_leverage(symbol, direccion_trade, apal_x)
-                if response['code'] == 0:
-                    print ('Actualización de apalancamiento OK: {}'.format(response['data']))
-                else:
-                    print ('Error al actualizar el apalancamiento: {}'.format(response['msg']))
-                    exit()
+
+
+
+
+
+
+        if existe_orden:
+
+            # consultar apalancamiento
+            response = api_request(service='/openApi/swap/v2/trade/leverage', query_params=f"symbol={symbol}" ,header=True, sign=True)
+            apal_ord = response['data']
+            # verificar dirección del trade y tamaño del apalancamiento
+            for apal_side in apal_ord.keys():
+                if apal_side.find(positionSide.lower()) != -1:
+                    apal_size = apal_ord[apal_side]
+            # comprobar que el apalancamiento de las ordenes sea el mismo que el que se quiere colocar
+            if apal_size != apal_x:
+                print('Existen ordenes en ese par con un apalancamiento diferente')
+                exit()
+            
+            ## comentario: si existen ordenes y el apalancamiento es el mismo no hace falta actualizar.
+
+
+
+
+            # if not existe_orden:
+            #     response = switch_leverage(symbol, direccion_trade, apal_x)
+            #     if response['code'] == 0:
+            #         print ('Actualización de apalancamiento OK: {}'.format(response['data']))
+            #     else:
+            #         print ('Error al actualizar el apalancamiento: {}'.format(response['msg']))
+            #         exit()
         # Si no existen ordenes previas, configurar apalancamiento
         else:
             response = switch_leverage(symbol, direccion_trade, apal_x)
